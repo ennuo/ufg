@@ -1,0 +1,102 @@
+package ufg.resources;
+
+import ufg.util.ExecutionContext;
+import ufg.io.Serializable;
+import ufg.io.Serializer;
+import ufg.enums.AlphaState;
+import ufg.enums.MipmapBias;
+import ufg.enums.TextureFilter;
+import ufg.enums.TextureFlags;
+import ufg.enums.TextureFormat;
+import ufg.enums.TextureType;
+import ufg.structures.chunks.ResourceData;
+import ufg.utilities.UFGCRC;
+
+public class Texture extends ResourceData {
+    public static final int BASE_ALLOCATION_SIZE = 0x100;
+
+    public int flags = TextureFlags.NONE;
+    public TextureFormat format = TextureFormat.DXT5;
+    public TextureType type = TextureType.T_2D;
+    public byte aniso;
+    public MipmapBias mipMapBiasPreset = MipmapBias.UNSPECIFIED;
+    public int mipMipBias = 0xBF91EB85;
+    public short width;
+    public short height;
+    public byte numMipMaps = 1;
+    public TextureFilter filter = TextureFilter.DEFAULT;
+    public short depth = 1;
+    public AlphaState alphaState = AlphaState.NONE;
+
+    public int alphaStateSampler;
+    // TextureUser
+    public int imageDataByteSize;
+    // public int lastUsedFrameNum;
+    public int imageDataPosition;
+    // qVRAMemoryPool*
+    // qMemoryPool*
+    // qResourceFileHandle* textureDataHandle
+
+    public Texture() { this.typeUID = UFGCRC.qStringHash32("Illusion.Texture"); }
+
+    @SuppressWarnings("unchecked")
+    @Override public Texture serialize(Serializer serializer, Serializable structure) {
+        Texture texture = (structure == null) ? new Texture() : (Texture) structure;
+
+        super.serialize(serializer, texture);
+
+        texture.flags = serializer.i32(texture.flags);
+
+        texture.format = serializer.enum8(texture.format);
+        texture.type = serializer.enum8(texture.type);
+        texture.aniso = serializer.i8(texture.aniso);
+        
+        texture.mipMapBiasPreset = serializer.enum8(texture.mipMapBiasPreset);
+        texture.mipMipBias = serializer.i32(texture.mipMipBias);
+
+        texture.width = serializer.i16(texture.width);
+        texture.height = serializer.i16(texture.height);
+
+        texture.numMipMaps = serializer.i8(texture.numMipMaps);
+        texture.filter = serializer.enum8(texture.filter);
+        texture.depth = serializer.i16(texture.depth);
+        
+        texture.alphaState = serializer.enum32(texture.alphaState);
+
+        serializer.pad(0xC);
+        texture.alphaStateSampler = serializer.i32(texture.alphaStateSampler);
+        if (!ExecutionContext.IS_MODNATION_RACERS)
+            serializer.pad(0x8);
+
+        texture.imageDataPosition = serializer.i32(texture.imageDataPosition);
+        texture.imageDataByteSize = serializer.i32(texture.imageDataByteSize);
+
+        // This is a mess down here, I don't know what actually maps to what
+        // and what's just alignment, it doesn't really affect much in terms
+        // of practical use, but even still.
+        // Blagh!
+        if (ExecutionContext.IS_MODNATION_RACERS) {
+            serializer.i32(0x50);
+            serializer.pad(0xC);
+            serializer.i32(0x60);
+            serializer.pad(0x8);
+            serializer.i32(-1);
+            serializer.pad(0x50);
+        } else {
+            serializer.i32(0x58);
+            serializer.pad(0x14);
+            serializer.i32(0x60);
+            serializer.pad(0x5f);
+        }
+
+        serializer.str("BA0", 3);
+        serializer.pad(0xa);
+
+        return texture;
+    }
+
+    @Override public int getAllocatedSize() {
+        int size = Texture.BASE_ALLOCATION_SIZE;
+        return size;
+    }
+}
