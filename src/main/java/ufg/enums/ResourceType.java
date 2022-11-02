@@ -8,6 +8,7 @@ import ufg.resources.Material;
 import ufg.resources.Model;
 import ufg.resources.MorphTargets;
 import ufg.resources.Texture;
+import ufg.resources.TexturePack;
 import ufg.structures.chunks.ResourceData;
 
 public enum ResourceType implements ValueEnum<Integer> {
@@ -23,7 +24,7 @@ public enum ResourceType implements ValueEnum<Integer> {
     MODEL_DATA(0x6DF963B3, Model.class), // Illusion.Model.ChunkV1
     UI_LOCALIZATION(0x90CE6B7A),
     PARTDB_PART(0x8D43D0B4),
-    TEXTURE_DATA(0x5E73CDD7),
+    TEXTURE_PACK(0x5E73CDD7, TexturePack.class),
     TEXTURE_DESCRIPTOR(0xCDBFA090, Texture.class); // Illusion.Texture.ChunkV1
 
     private final int value;

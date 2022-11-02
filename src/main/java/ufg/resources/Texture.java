@@ -1,8 +1,16 @@
 package ufg.resources;
 
+import ufg.util.DDS;
 import ufg.util.ExecutionContext;
+import ufg.util.FileIO;
 import ufg.io.Serializable;
 import ufg.io.Serializer;
+
+import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
+
+import javax.imageio.ImageIO;
+
 import ufg.enums.AlphaState;
 import ufg.enums.MipmapBias;
 import ufg.enums.TextureFilter;
@@ -11,6 +19,8 @@ import ufg.enums.TextureFormat;
 import ufg.enums.TextureType;
 import ufg.structures.chunks.ResourceData;
 import ufg.utilities.UFGCRC;
+
+import java.awt.image.BufferedImage;
 
 public class Texture extends ResourceData {
     public static final int BASE_ALLOCATION_SIZE = 0x100;
@@ -38,6 +48,26 @@ public class Texture extends ResourceData {
     // qResourceFileHandle* textureDataHandle
 
     public Texture() { this.typeUID = UFGCRC.qStringHash32("Illusion.Texture"); }
+
+    public byte[] toPNG(byte[] texturePack) {
+        if (texturePack == null) return null;
+        
+        byte[] header = DDS.getDDSHeader(this);
+        byte[] rawData = 
+            Arrays.copyOfRange(texturePack, this.imageDataPosition, this.imageDataPosition + this.imageDataByteSize);
+        
+        byte[] dds = new byte[rawData.length + header.length];
+        System.arraycopy(header, 0, dds, 0, header.length);
+        System.arraycopy(rawData, 0, dds, header.length, rawData.length);
+
+        BufferedImage image = DDS.toBufferedImage(dds);
+        if (image == null) return null;
+
+        try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
+            ImageIO.write(image, "png", stream);
+            return stream.toByteArray();
+        } catch (Exception ex) { return null; }
+    }
 
     @SuppressWarnings("unchecked")
     @Override public Texture serialize(Serializer serializer, Serializable structure) {

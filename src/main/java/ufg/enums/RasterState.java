@@ -28,7 +28,7 @@ public enum RasterState implements ValueEnum<Integer> {
 
     public Integer getValue() { return this.value; }
 
-    public static RasterState fromValue(byte value) {
+    public static RasterState fromValue(int value) {
         for (RasterState state : RasterState.values()) {
             if (state.value == value) 
                 return state;

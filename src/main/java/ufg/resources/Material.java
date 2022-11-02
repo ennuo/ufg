@@ -123,6 +123,14 @@ public class Material extends ResourceData {
         return parameter;
     }
 
+    public MaterialParameter getProperty(String name) {
+        int uid = UFGCRC.qStringHash32(name);
+        for (MaterialParameter parameter : this.parameters)
+            if (parameter.paramName == uid)
+                return parameter;
+        return null;
+    }
+
     @SuppressWarnings("unchecked")
     @Override public Material serialize(Serializer serializer, Serializable structure) {
         Material material = (structure == null) ? new Material() : (Material) structure;
