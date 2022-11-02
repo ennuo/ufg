@@ -293,6 +293,22 @@ public class VertexStreams {
     }
 
     static {
+        VertexStreamDescriptor stream = VertexStreams.add("VertexDecl.Terrain", 0xccb11bc6);
+
+        stream.addElement(
+            VertexStreamElementUsage.POSITION, 
+            VertexStreamElementType.HALF4, 
+            0
+        );
+
+        stream.addElement(
+            VertexStreamElementUsage.TEXCOORD0, 
+            VertexStreamElementType.HALF2, 
+            1
+        );
+    }
+
+    static {
         VertexStreamDescriptor stream = VertexStreams.add("VertexDecl.MorphTarget", 0x7029f5ba);
 
         stream.addElement(
@@ -306,6 +322,47 @@ public class VertexStreams {
             VertexStreamElementType.I11_11_10N, 
             0
         );
+    }
+
+    static {
+        VertexStreamDescriptor stream = VertexStreams.add("VertexDecl.UVNTC", 0xe234ef7a);
+
+        stream.addElement(
+            VertexStreamElementUsage.POSITION, 
+            VertexStreamElementType.SHORT4_FIXED4_12, 
+            0
+        );
+
+        stream.addElement(
+            VertexStreamElementUsage.NORMAL, 
+            VertexStreamElementType.I11_11_10N, 
+            0
+        );
+
+        stream.addElement(
+            VertexStreamElementUsage.TANGENT, 
+            VertexStreamElementType.UBYTE4, 
+            0
+        );
+
+        stream.addElement(
+            VertexStreamElementUsage.BLENDINDEX, 
+            VertexStreamElementType.UBYTE4, 
+            1
+        );
+
+        stream.addElement(
+            VertexStreamElementUsage.BLENDWEIGHT, 
+            VertexStreamElementType.UBYTE4N, 
+            1
+        );
+
+        stream.addElement(
+            VertexStreamElementUsage.TEXCOORD0, 
+            VertexStreamElementType.HALF2, 
+            2
+        );
+
     }
 
 }

@@ -1,11 +1,13 @@
 package ufg.utilities;
 
 import ufg.io.streams.MemoryInputStream;
+import ufg.util.FileIO;
 
 public class DecompressLZ {
     public static byte[] decompress(byte[] data) {
         MemoryInputStream stream = new MemoryInputStream(data);
         String magic = stream.str(4);
+        
         if (magic.equals("PMCQ")) stream.setLittleEndian(true);
         else if (!magic.equals("QCMP"))
             throw new IllegalArgumentException("Not a quick compressed file!");

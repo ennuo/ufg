@@ -133,9 +133,11 @@ public class MeshExporter {
             Material glMaterial = new Material();
             glMaterial.setName(material.name);
 
+            // TODO: Actually check raster state
+            glMaterial.setDoubleSided(true);
+            
             MaterialPbrMetallicRoughness pbr = new MaterialPbrMetallicRoughness();
             glMaterial.setPbrMetallicRoughness(pbr);
-            pbr.setBaseColorFactor(new float[] { 1.0f, 1.0f, 1.0f, 1.0f });
 
             MaterialParameter diffuse = material.getProperty("texDiffuse");
             if (diffuse != null) {
@@ -282,7 +284,6 @@ public class MeshExporter {
                 primitive.setIndices(this.addAccessor("INDICES", 5123, "SCALAR", mesh.indexStart * 0x2, mesh.numPrimitives * 0x3));
 
                 primitive.setMaterial(this.addMaterial((ufg.resources.Material) this.modelStreamingResources.get(mesh.materialUID)));
-                primitive.setMode(4);
                 glMesh.addPrimitives(primitive);
             }
 
