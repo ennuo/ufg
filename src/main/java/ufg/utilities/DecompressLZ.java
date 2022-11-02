@@ -19,7 +19,7 @@ public class DecompressLZ {
         int uncompressedNumBytes = (int) stream.i64();
         long uncompressedChecksum = stream.i64();
 
-        int dataSize = compressedNumBytes - dataOffset - inPlaceExtraNumBytes;
+        int dataSize = compressedNumBytes - dataOffset;
 
         byte[] decompressedData = new byte[uncompressedNumBytes];
         int[] cache = new int[32];
@@ -58,8 +58,9 @@ public class DecompressLZ {
                 cache[current++ % 0x20] = size * 0x10000 | f | n;
             }
 
-            System.arraycopy(decompressedData, j - offset, decompressedData, j, size);
-            j += size;
+            int start = (j - offset);
+            for (int index = start; index < (start + size); ++index)
+                decompressedData[j++] = decompressedData[index];
         }
 
         if (uncompressedChecksum != UFGCRC.hash(decompressedData))
