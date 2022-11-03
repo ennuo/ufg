@@ -210,7 +210,7 @@ public class MeshExporter {
                         this.views.put("COLOR_" + i, this.views.get("COLOR_" + streamIndex));
 
                     if (model.meshes[streamIndex].indexBufferUID != model.meshes[i].indexBufferUID)
-                        throw new RuntimeException("fuck off");
+                        throw new RuntimeException("Index buffer mismatch for vertex stream!");
                     
                     this.views.put("INDICES_" + i, this.views.get("INDICES_" + streamIndex));
                     

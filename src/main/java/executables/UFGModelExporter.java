@@ -1,6 +1,8 @@
 package executables;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -34,10 +36,7 @@ public class UFGModelExporter {
     }
 
     public static void main(String[] args) {
-        String game = null;
-        File folder = null;
-
-        if (args.length < 5) {
+        if (args.length == 0) {
             System.out.println("UFG Model Exporter by ennuo\n");
             System.out.println("Usage:");
             System.out.println("\tTo export just model data:");
@@ -47,7 +46,11 @@ public class UFGModelExporter {
             System.out.println("\t\tjava -jar ufg.jar -g <game> <...model_packs> -o <output_folder> -tp <perm.bin> <temp.bin>\n");
 
             System.out.println("\tTo export model data w/ textures (indexed texture stream):");
-            System.out.println("\t\tjava -jar ufg.jar -g <game> <...model_packs> -o <output_folder> -tps <perm.bin> <.perm.idx>\n");
+            System.out.println("\t\tjava -jar ufg.jar -g <game> <...model_packs> -o <output_folder> -tps <perm.bin> <perm.idx>\n");
+
+            System.out.println("\tTo just export a texture pack:");
+            System.out.println("\t\tjava -jar ufg.jar -g <game> -o <output_folder> -tps <perm.bin> <perm.idx> --dump-textures\n");
+            System.out.println("\t\tjava -jar ufg.jar -g <game> -o <output_folder> -tp <perm.bin> <temp.bin> --dump-textures\n");
 
             System.out.println("NOTE: You may specify multiple texture packs and model packs by repeating respective arguments.\n");
             
@@ -55,7 +58,8 @@ public class UFGModelExporter {
             System.out.println("\t--game, -g <game>\n\tSpecifies which game source data is from.\n\tSupported games are mnr/modnation and karting/lbpk\n");
             System.out.println("\t--output, -o <output_folder>\n\tSpecifies what folder to store output\n");
             System.out.println("\t--texture-pack, -tp <perm.bin> <temp.bin>\n\tLoads a texture pack\n");
-            System.out.println("\t--texture-pack-stream, -tps <perm.bin> <.idx>\n\tLoads an indexed texture pack stream");
+            System.out.println("\t--texture-pack-stream, -tps <perm.bin> <.idx>\n\tLoads an indexed texture pack stream\n");
+            System.out.println("\t--dump-textures, -d\n\tDumps all texture packs to PNGs");
 
             return;
         }
@@ -66,6 +70,10 @@ public class UFGModelExporter {
 
         HashMap<Integer, ResourceData> modelStreamingResources = new HashMap<>();
         HashMap<Integer, ResourceData> textureStreamingResources = new HashMap<>();
+
+        String game = null;
+        File folder = null;
+        boolean shouldDumpTextures = false;
 
         for (int i = 0; i < args.length; ++i) {
 
@@ -87,6 +95,10 @@ public class UFGModelExporter {
                     }
                     case "-tp": case "--texture-pack": {
                         texturePackArguments.add(new StringPair(args[++i], args[++i]));
+                        continue;
+                    }
+                    case "-d": case "--dump-textures": {
+                        shouldDumpTextures = true;
                         continue;
                     }
                     default: {
@@ -131,9 +143,6 @@ public class UFGModelExporter {
                 return;
             }
 
-            byte[] bin = FileIO.read(pair.first());
-
-
             ChunkFileIndex index = null;
             try { 
                 Chunk chunk = Chunk.loadChunk(pair.second());
@@ -148,56 +157,63 @@ public class UFGModelExporter {
                 return;
             }
 
-            for (ChunkFileIndexEntry entry : index.entries) {
-                int upperPosition = entry.lowerPosition + entry.byteSize;
-                if (upperPosition > bin.length) {
-                    System.err.println("Indexed data exceeds size of bin file! Are you sure you're loading the right file?");
-                    return;
-                }
-
-                byte[] section = Arrays.copyOfRange(bin, entry.lowerPosition, upperPosition);
-
-                int magic = Bytes.toIntegerBE(section);
-
-                try {
-                    // Compression magic values
-                    if (magic == 1347240785 || magic == 1363365200) 
-                        section = DecompressLZ.decompress(section);
-                } catch (Exception ex) {
-                    System.out.println("An error occurred while decompressing data!");
-                    return;
-                }
-
-                ResourceType type = ResourceType.fromValue(Bytes.toIntegerBE(section));
-                if (type == ResourceType.TEXTURE_DESCRIPTOR) {
+            try (RandomAccessFile bin = new RandomAccessFile(new File(pair.first()), "r")) {
+                for (ChunkFileIndexEntry entry : index.entries) {
+                    int upperPosition = entry.lowerPosition + entry.byteSize;
+                    if (upperPosition > bin.length()) {
+                        System.err.println("Indexed data exceeds size of bin file! Are you sure you're loading the right file?");
+                        return;
+                    }
+    
+                    bin.seek(entry.lowerPosition);
+                    byte[] section = new byte[entry.byteSize];
+                    bin.readFully(section);
+    
+                    int magic = Bytes.toIntegerBE(section);
+    
                     try {
-                        Texture texture = Chunk.loadChunk(section).loadResource(Texture.class);
-                        textureStreamingResources.put(texture.UID, texture);
-                        continue;
+                        // Compression magic values
+                        if (magic == 1347240785 || magic == 1363365200) 
+                            section = DecompressLZ.decompress(section);
                     } catch (Exception ex) {
-                        System.err.println("An error occurred processing texture data!");
+                        System.out.println("An error occurred while decompressing data!");
                         return;
                     }
-                }
-
-                if (type != ResourceType.TEXTURE_PACK) 
-                    throw new RuntimeException("Found unexpected resource in texture pack!");
-
-                TexturePack pack = null;
-                if (ExecutionContext.IS_MODNATION_RACERS) {
-                    try { pack = Chunk.loadChunk(section).loadResource(TexturePack.class); }
-                    catch (Exception ex) {
-                        System.err.println("An error occurred processing texture pack: " + pair.second());
-                        return;
+    
+                    ResourceType type = ResourceType.fromValue(Bytes.toIntegerBE(section));
+                    if (type == ResourceType.TEXTURE_DESCRIPTOR) {
+                        try {
+                            Texture texture = Chunk.loadChunk(section).loadResource(Texture.class);
+                            textureStreamingResources.put(texture.UID, texture);
+                            continue;
+                        } catch (Exception ex) {
+                            System.err.println("An error occurred processing texture data!");
+                            return;
+                        }
                     }
+    
+                    if (type != ResourceType.TEXTURE_PACK) 
+                        throw new RuntimeException("Found unexpected resource in texture pack!");
+    
+                    TexturePack pack = null;
+                    if (ExecutionContext.IS_MODNATION_RACERS) {
+                        try { pack = Chunk.loadChunk(section).loadResource(TexturePack.class); }
+                        catch (Exception ex) {
+                            System.err.println("An error occurred processing texture pack: " + pair.second());
+                            return;
+                        }
+                    }
+                    else {
+                        pack = new TexturePack();
+                        pack.UID = entry.filenameUID;
+                        pack.stream = section;
+                    }
+                    
+                    textureStreamingResources.put(pack.UID, pack);
                 }
-                else {
-                    pack = new TexturePack();
-                    pack.UID = entry.filenameUID;
-                    pack.stream = section;
-                }
-
-                textureStreamingResources.put(pack.UID, pack);
+            } catch (IOException ex) {
+                System.err.println("An error occurred opening read stream to " + pair.first());
+                return;
             }
         }
 
@@ -278,6 +294,20 @@ public class UFGModelExporter {
             }
 
             FileIO.write(glb, new File(folder, data.name + ".GLB").getAbsolutePath());
+        }
+
+        if (!shouldDumpTextures) return;
+
+        for (int key : textureStreamingResources.keySet()) {
+            ResourceData data = textureStreamingResources.get(key);
+            if (!(data instanceof Texture)) continue;
+            Texture texture = (Texture) data;
+            TexturePack pack = (TexturePack) textureStreamingResources.get(texture.alphaStateSampler);
+            try { 
+                FileIO.write(texture.toPNG(pack.stream), new File(folder, texture.name + ".PNG").getAbsolutePath());
+            } catch (Exception ex) {
+                System.err.println("An error occurred converting " + texture.name + " to PNG!");
+            }
         }
     }
 }
