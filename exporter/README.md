@@ -43,3 +43,6 @@ java -jar ufg.jar -g <game> -o <output_folder> -tp <perm.bin> <temp.bin> --dump-
 
         --dump-textures, -d
         Dumps all texture packs to PNGs
+        
+        --cache-textures, -c
+        Caches streaming textures in memory for faster processing, uses more memory
