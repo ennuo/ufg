@@ -6,7 +6,7 @@ import ufg.io.Serializable;
 import ufg.io.Serializer;
 import ufg.structures.chunks.ChunkFileIndexEntry;
 import ufg.structures.chunks.ResourceData;
-import ufg.utilities.UFGCRC;
+import ufg.util.UFGCRC;
 
 public class ChunkFileIndex extends ResourceData {
     public static final int BASE_ALLOCATION_SIZE = 0x40 + 0x10;

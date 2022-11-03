@@ -1,10 +1,10 @@
 package ufg.resources;
 
 import ufg.util.ExecutionContext;
+import ufg.util.UFGCRC;
 import ufg.io.Serializable;
 import ufg.io.Serializer;
 import ufg.structures.chunks.ResourceData;
-import ufg.utilities.UFGCRC;
 
 public class BonePalette extends ResourceData {
     public static final int BASE_ALLOCATION_SIZE = 0x40 + 0xc0;

@@ -1,4 +1,4 @@
-package ufg.utilities;
+package ufg.util;
 
 public class UFGCRC {
     private static final int[] CRC_TABLE_32 = new int[] {

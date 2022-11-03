@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import ufg.io.Serializable;
 import ufg.io.Serializer;
-import ufg.utilities.UFGCRC;
+import ufg.util.UFGCRC;
 
 public class XmlDb implements Serializable {
 

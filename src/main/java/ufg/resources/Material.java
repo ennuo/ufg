@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import ufg.io.Serializable;
 import ufg.io.Serializer;
 import ufg.structures.chunks.ResourceData;
-import ufg.utilities.UFGCRC;
+import ufg.util.UFGCRC;
 
 public class Material extends ResourceData {
     public static final int BASE_ALLOCATION_SIZE = 

@@ -12,7 +12,7 @@ import ufg.io.Serializable;
 import ufg.io.Serializer;
 import ufg.enums.PartAttrib;
 import ufg.structures.chunks.ResourceData;
-import ufg.utilities.UFGCRC;
+import ufg.util.UFGCRC;
 
 public class PartDB extends ResourceData {
     public static final int BASE_ALLOCATION_SIZE = 

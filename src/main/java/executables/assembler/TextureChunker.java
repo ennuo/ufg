@@ -9,9 +9,9 @@ import java.util.Arrays;
 
 import ufg.io.streams.MemoryInputStream;
 import ufg.util.FileIO;
+import ufg.util.UFGCRC;
 import ufg.enums.TextureFormat;
 import ufg.resources.Texture;
-import ufg.utilities.UFGCRC;
 
 public class TextureChunker {
     public static class TextureChunkerResult {

@@ -11,6 +11,7 @@ import ufg.io.streams.MemoryOutputStream;
 import ufg.io.streams.MemoryInputStream.SeekMode;
 import ufg.util.Bytes;
 import ufg.util.FileIO;
+import ufg.util.UFGCRC;
 import ufg.enums.PartAttrib;
 import ufg.enums.ResourceType;
 import ufg.resources.ChunkFileIndex;
@@ -24,7 +25,6 @@ import ufg.structures.XmlDb;
 import ufg.structures.XmlDb.XmlDbNode;
 import ufg.structures.chunks.Chunk;
 import ufg.structures.chunks.ChunkFileIndexEntry;
-import ufg.utilities.UFGCRC;
 
 public class Assembler {
     private static class Package {

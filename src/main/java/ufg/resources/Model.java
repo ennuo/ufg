@@ -3,11 +3,11 @@ package ufg.resources;
 import org.joml.Vector3f;
 
 import ufg.util.ExecutionContext;
+import ufg.util.UFGCRC;
 import ufg.io.Serializable;
 import ufg.io.Serializer;
 import ufg.structures.chunks.ResourceData;
 import ufg.structures.vertex.Mesh;
-import ufg.utilities.UFGCRC;
 
 public class Model extends ResourceData {
     public static final int BASE_ALLOCATION_SIZE = 

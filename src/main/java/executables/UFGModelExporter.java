@@ -6,10 +6,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import ufg.util.Bytes;
+import ufg.util.DecompressLZ;
 import ufg.util.ExecutionContext;
 import ufg.util.FileIO;
-import ufg.utilities.DecompressLZ;
-import ufg.utilities.UFGCRC;
+import ufg.util.UFGCRC;
 import ufg.enums.ResourceType;
 import ufg.io.MeshExporter;
 import ufg.resources.ChunkFileIndex;
@@ -180,7 +180,7 @@ public class UFGModelExporter {
                     }
                 }
 
-                if (type != ResourceType.TEXTURE_PACK)
+                if (type != ResourceType.TEXTURE_PACK) 
                     throw new RuntimeException("Found unexpected resource in texture pack!");
 
                 TexturePack pack = null;

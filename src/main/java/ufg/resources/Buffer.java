@@ -5,7 +5,7 @@ import ufg.io.Serializer;
 import ufg.enums.BufferFlags;
 import ufg.enums.BufferType;
 import ufg.structures.chunks.ResourceData;
-import ufg.utilities.UFGCRC;
+import ufg.util.UFGCRC;
 
 public class Buffer extends ResourceData {
     public static final int BASE_ALLOCATION_SIZE = 0x40 + 0xC0;

@@ -1,7 +1,7 @@
 package ufg.enums;
 
 import ufg.io.ValueEnum;
-import ufg.utilities.UFGCRC;
+import ufg.util.UFGCRC;
 
 public enum AlphaState implements ValueEnum<Integer> {
     NONE("None"),

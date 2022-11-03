@@ -35,7 +35,7 @@ import ufg.structures.chunks.Chunk;
 import ufg.structures.vertex.Mesh;
 import ufg.structures.vertex.VertexStreamDescriptor;
 import ufg.structures.vertex.VertexStreams;
-import ufg.utilities.UFGCRC;
+import ufg.util.UFGCRC;
 
 public class MeshChunker {
     public static class MeshChunkerResult {

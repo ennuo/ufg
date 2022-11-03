@@ -3,6 +3,7 @@ package ufg.resources;
 import ufg.util.DDS;
 import ufg.util.ExecutionContext;
 import ufg.util.FileIO;
+import ufg.util.UFGCRC;
 import ufg.io.Serializable;
 import ufg.io.Serializer;
 
@@ -18,7 +19,6 @@ import ufg.enums.TextureFlags;
 import ufg.enums.TextureFormat;
 import ufg.enums.TextureType;
 import ufg.structures.chunks.ResourceData;
-import ufg.utilities.UFGCRC;
 
 import java.awt.image.BufferedImage;
 

@@ -1,7 +1,6 @@
-package ufg.utilities;
+package ufg.util;
 
 import ufg.io.streams.MemoryInputStream;
-import ufg.util.FileIO;
 
 public class DecompressLZ {
     public static byte[] decompress(byte[] data) {

@@ -7,11 +7,11 @@ import ufg.io.streams.MemoryInputStream;
 import ufg.io.streams.MemoryOutputStream;
 import ufg.io.streams.MemoryInputStream.SeekMode;
 import ufg.util.Bytes;
+import ufg.util.UFGCRC;
 import ufg.enums.BufferType;
 import ufg.enums.VertexStreamElementType;
 import ufg.enums.VertexStreamElementUsage;
 import ufg.resources.Buffer;
-import ufg.utilities.UFGCRC;
 
 public class VertexStreamDescriptor {
     
