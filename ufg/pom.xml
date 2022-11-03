@@ -7,8 +7,7 @@
     <groupId>ennuo</groupId>
     <artifactId>ufg</artifactId>
     <version>0.1</version>
-
-    <name>${project.groupId}:${project.artifactId}</name>
+    
     <description>Java standalone library for UFG games.</description>
     <packaging>jar</packaging>
 
