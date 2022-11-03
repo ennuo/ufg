@@ -1,4 +1,5 @@
-package executables.assembler;
+package ufg;
+
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -21,7 +22,7 @@ import de.javagl.jgltf.model.NodeModel;
 import de.javagl.jgltf.model.SkinModel;
 import de.javagl.jgltf.model.io.GltfModelReader;
 import de.javagl.jgltf.model.v2.GltfModelV2;
-import executables.assembler.TextureChunker.TextureChunkerResult;
+import ufg.TextureChunker.TextureChunkerResult;
 import ufg.enums.BufferType;
 import ufg.enums.PrimitiveType;
 import ufg.enums.ResourceType;

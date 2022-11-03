@@ -5,65 +5,16 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>ennuo</groupId>
-    <artifactId>ufg</artifactId>
+    <artifactId>ufg-parent</artifactId>
     <version>0.1</version>
-
+    <packaging>pom</packaging>
+    
     <name>${project.groupId}:${project.artifactId}</name>
     <description>Java standalone library for UFG games.</description>
-    <packaging>jar</packaging>
 
-    <properties>
-        <joml.version>1.10.5</joml.version>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>executables.UFGModelExporter</mainClass>
-                        </manifest>
-                    </archive>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                    <appendAssemblyId>false</appendAssemblyId>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>make-assembly</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.3.2</version>
-                <configuration>
-                    <showDeprecation>true</showDeprecation>
-                    <source>11</source>
-                    <target>11</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-    <dependencies>
-        <dependency>
-            <groupId>de.javagl</groupId>
-            <artifactId>jgltf-model</artifactId>
-            <version>2.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.joml</groupId>
-            <artifactId>joml</artifactId>
-            <version>${joml.version}</version>
-        </dependency>
-    </dependencies>
+    <modules>
+        <module>ufg</module>
+        <module>exporter</module>
+        <module>assembler</module>
+    </modules>
 </project>

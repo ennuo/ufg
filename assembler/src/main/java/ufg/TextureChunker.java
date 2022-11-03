@@ -1,4 +1,5 @@
-package executables.assembler;
+package ufg;
+
 
 import java.io.File;
 import java.io.FileOutputStream;

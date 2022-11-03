@@ -1,4 +1,4 @@
-package executables;
+package ufg;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,12 +1,13 @@
-package executables.assembler;
+package ufg;
+
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import executables.assembler.MeshChunker.MeshChunkerResult;
-import executables.assembler.TextureChunker.TextureChunkerResult;
+import ufg.MeshChunker.MeshChunkerResult;
+import ufg.TextureChunker.TextureChunkerResult;
 import ufg.io.streams.MemoryOutputStream;
 import ufg.io.streams.MemoryInputStream.SeekMode;
 import ufg.util.Bytes;
