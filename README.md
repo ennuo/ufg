@@ -2,6 +2,8 @@
 
 Tools for working with games made by UFG, mainly supports Modnation Racers and LittleBigPlanet Karting.
 
+*JARs are automatically built and are available in the [Actions](https://github.com/ennuo/ufg/actions) tab.*
+
 ## Tools
 
 ### [Model Exporter](https://github.com/ennuo/ufg/tree/main/exporter)
