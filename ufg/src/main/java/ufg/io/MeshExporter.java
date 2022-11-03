@@ -30,10 +30,10 @@ import de.javagl.jgltf.model.io.v2.GltfAssetWriterV2;
 import ufg.resources.Model;
 import ufg.resources.TexturePack;
 import ufg.resources.Material.MaterialParameter;
+import ufg.structures.chunks.ChunkFileIndexEntry;
 import ufg.structures.chunks.ResourceData;
 import ufg.structures.vertex.VertexStreamDescriptor;
 import ufg.structures.vertex.VertexStreams;
-import ufg.enums.PrimitiveType;
 import ufg.enums.VertexStreamElementUsage;
 
 public class MeshExporter {
@@ -42,11 +42,13 @@ public class MeshExporter {
         GlTF glTf = new GlTF();
         byte[] buffer = null;
 
-        HashMap<Integer, ResourceData> modelStreamingResources;
-        HashMap<Integer, ResourceData> textureStreamingResources;
+        HashMap<Integer, ResourceData> modelStreamingResources; // .perm.bin, .perm.idx (small enough we can ignore the streaming part)
+        HashMap<Integer, ResourceData> texturePackResources; // .perm.bin, .temp.bin
+        HashMap<Integer, ChunkFileIndexEntry> textureStreamingResources; // .perm.bin, .perm.idx
 
         HashMap<Integer, Integer> materials = new HashMap<>();
         HashMap<Integer, Integer> textures = new HashMap<>();
+
 
         int numAccessors = 0;
         int numTextures = 0;
@@ -54,8 +56,9 @@ public class MeshExporter {
 
         HashMap<String, Integer> views = new HashMap<>();
 
-        private ExportContext(HashMap<Integer, ResourceData> modelStreamingResources, HashMap<Integer, ResourceData> textureStreamingResources) {
+        private ExportContext(HashMap<Integer, ResourceData> modelStreamingResources, HashMap<Integer, ResourceData> texturePackResources, HashMap<Integer, ChunkFileIndexEntry> textureStreamingResources) {
             this.modelStreamingResources = modelStreamingResources;
+            this.texturePackResources = texturePackResources;
             this.textureStreamingResources = textureStreamingResources;
         }
         
@@ -90,20 +93,27 @@ public class MeshExporter {
         }
 
         public Integer addTexture(int textureUID) {
-            ufg.resources.Texture texture = (ufg.resources.Texture) this.textureStreamingResources.get(textureUID);
-            if (texture == null) return null;
+            if (this.textures.containsKey(textureUID))
+                return this.textures.get(textureUID);
+            
+            ufg.resources.Texture texture = null;
+            if (this.texturePackResources.containsKey(textureUID))
+                texture = ((ufg.resources.Texture) this.texturePackResources.get(textureUID));
+            else if (this.textureStreamingResources.containsKey(textureUID))
+                texture = this.textureStreamingResources.get(textureUID).loadData(ufg.resources.Texture.class);
 
-            if (this.textures.containsKey(texture.UID))
-                return this.textures.get(texture.UID);
-
-                
             // in MNR, imageDataPosition for image starts after ResourceData
             // in KARTING, imageDataPosition starts at beginning of chunk
 
-            TexturePack pack = (TexturePack) this.textureStreamingResources.get(texture.alphaStateSampler);
-            if (pack == null) return null;
+            byte[] stream = null;
+            if (this.texturePackResources.containsKey(texture.alphaStateSampler))
+                stream = ((TexturePack) this.texturePackResources.get(texture.alphaStateSampler)).stream;
+            else if (this.textureStreamingResources.containsKey(texture.alphaStateSampler))
+                stream = this.textureStreamingResources.get(texture.alphaStateSampler).getTexturePackData();
+            
+            if (stream == null) return null;
 
-            byte[] textureData = texture.toPNG(pack.stream);
+            byte[] textureData = texture.toPNG(stream);
             if (textureData == null) return null;
 
             Image image = new Image();
@@ -367,9 +377,9 @@ public class MeshExporter {
         }
     }
 
-    public static byte[] getGLB(int modelUID, HashMap<Integer, ResourceData> modelStreaming, HashMap<Integer, ResourceData> textureStreaming) {
+    public static byte[] getGLB(int modelUID, HashMap<Integer, ResourceData> modelStreaming, HashMap<Integer, ResourceData> texturePackResources, HashMap<Integer, ChunkFileIndexEntry> texturePackStreaming) {
 
-        ExportContext context = new ExportContext(modelStreaming, textureStreaming);
+        ExportContext context = new ExportContext(modelStreaming, texturePackResources, texturePackStreaming);
         if (!context.addModel(modelUID))
             return null;
 
