@@ -23,8 +23,6 @@ import ufg.structures.chunks.ChunkFileIndexEntry;
 import ufg.structures.chunks.ResourceData;
 
 public class UFGModelExporter {
-    private static final boolean SHOULD_CACHE_STREAMING_PACKS = false;
-
     public static class StringPair {
         private String str1, str2;
 
@@ -61,7 +59,8 @@ public class UFGModelExporter {
             System.out.println("\t--output, -o <output_folder>\n\tSpecifies what folder to store output\n");
             System.out.println("\t--texture-pack, -tp <perm.bin> <temp.bin>\n\tLoads a texture pack\n");
             System.out.println("\t--texture-pack-stream, -tps <perm.bin> <.idx>\n\tLoads an indexed texture pack stream\n");
-            System.out.println("\t--dump-textures, -d\n\tDumps all texture packs to PNGs");
+            System.out.println("\t--dump-textures, -d\n\tDumps all texture packs to PNGs\n");
+            System.out.println("\t--cache-textures, -c\n\tCaches streaming textures in memory for faster processing, uses more memory!");
 
             return;
         }
@@ -77,6 +76,7 @@ public class UFGModelExporter {
         String game = null;
         File folder = null;
         boolean shouldDumpTextures = false;
+        boolean shouldCacheTextures = false;
 
         for (int i = 0; i < args.length; ++i) {
 
@@ -102,6 +102,10 @@ public class UFGModelExporter {
                     }
                     case "-d": case "--dump-textures": {
                         shouldDumpTextures = true;
+                        continue;
+                    }
+                    case "-c": case "--cache-textures": {
+                        shouldCacheTextures = true;
                         continue;
                     }
                     default: {
@@ -161,71 +165,71 @@ public class UFGModelExporter {
             }
 
 
-            if (!SHOULD_CACHE_STREAMING_PACKS) {
-                File bin = new File(pair.first());
+            // The filenameUIDs in Modnation don't actually match the data
+            // they reference for whatever reason, so we'll have to parse it twice.
+            try (RandomAccessFile bin = new RandomAccessFile(new File(pair.first()), "r")) {
                 for (ChunkFileIndexEntry entry : index.entries) {
-                    entry.handle = bin;
-                    textureStreamingResources.put(entry.filenameUID, entry);
-                }
-            } else {
-                try (RandomAccessFile bin = new RandomAccessFile(new File(pair.first()), "r")) {
-                    for (ChunkFileIndexEntry entry : index.entries) {
-                        int upperPosition = entry.lowerPosition + entry.byteSize;
-                        if (upperPosition > bin.length()) {
-                            System.err.println("Indexed data exceeds size of bin file! Are you sure you're loading the right file?");
-                            return;
-                        }
-        
-                        bin.seek(entry.lowerPosition);
-                        byte[] section = new byte[entry.byteSize];
-                        bin.readFully(section);
-        
-                        int magic = Bytes.toIntegerBE(section);
-        
-                        try {
-                            // Compression magic values
-                            if (magic == 1347240785 || magic == 1363365200) 
-                                section = DecompressLZ.decompress(section);
-                        } catch (Exception ex) {
-                            System.out.println("An error occurred while decompressing data!");
-                            return;
-                        }
-        
-                        ResourceType type = ResourceType.fromValue(Bytes.toIntegerBE(section));
-                        if (type == ResourceType.TEXTURE_DESCRIPTOR) {
-                            try {
-                                Texture texture = Chunk.loadChunk(section).loadResource(Texture.class);
-                                texturePackResources.put(texture.UID, texture);
-                                continue;
-                            } catch (Exception ex) {
-                                System.err.println("An error occurred processing texture data!");
-                                return;
-                            }
-                        }
-        
-                        if (type != ResourceType.TEXTURE_PACK) 
-                            throw new RuntimeException("Found unexpected resource in texture pack!");
-    
-                        TexturePack pack = null;
-                        if (ExecutionContext.IS_MODNATION_RACERS) {
-                            try { pack = Chunk.loadChunk(section).loadResource(TexturePack.class); }
-                            catch (Exception ex) {
-                                System.err.println("An error occurred processing texture pack: " + pair.second());
-                                return;
-                            }
-                        }
-                        else {
-                            pack = new TexturePack();
-                            pack.UID = entry.filenameUID;
-                            pack.stream = section;
-                        }
-                        
-                        texturePackResources.put(pack.UID, pack);
+                    entry.handle = new File(pair.first());
+
+                    int upperPosition = entry.lowerPosition + entry.byteSize;
+                    if (upperPosition > bin.length()) {
+                        System.err.println("Indexed data exceeds size of bin file! Are you sure you're loading the right file?");
+                        return;
                     }
-                } catch (IOException ex) {
-                    System.err.println("An error occurred opening read stream to " + pair.first());
-                    return;
+    
+                    bin.seek(entry.lowerPosition);
+                    byte[] section = new byte[entry.byteSize];
+                    bin.readFully(section);
+    
+                    int magic = Bytes.toIntegerBE(section);
+    
+                    try {
+                        // Compression magic values
+                        if (magic == 1347240785 || magic == 1363365200) 
+                            section = DecompressLZ.decompress(section);
+                    } catch (Exception ex) {
+                        System.out.println("An error occurred while decompressing data!");
+                        return;
+                    }
+    
+                    ResourceType type = ResourceType.fromValue(Bytes.toIntegerBE(section));
+                    if (type == ResourceType.TEXTURE_DESCRIPTOR) {
+                        try {
+                            Texture texture = Chunk.loadChunk(section).loadResource(Texture.class);
+
+                            if (shouldCacheTextures) texturePackResources.put(texture.UID, texture);
+                            else textureStreamingResources.put(texture.UID, entry);
+
+                            continue;
+                        } catch (Exception ex) {
+                            System.err.println("An error occurred processing texture data!");
+                            return;
+                        }
+                    }
+    
+                    if (type != ResourceType.TEXTURE_PACK) 
+                        throw new RuntimeException("Found unexpected resource in texture pack!");
+
+                    TexturePack pack = null;
+                    if (ExecutionContext.IS_MODNATION_RACERS) {
+                        try { pack = Chunk.loadChunk(section).loadResource(TexturePack.class); }
+                        catch (Exception ex) {
+                            System.err.println("An error occurred processing texture pack: " + pair.second());
+                            return;
+                        }
+                    }
+                    else {
+                        pack = new TexturePack();
+                        pack.UID = entry.filenameUID;
+                        pack.stream = section;
+                    }
+
+                    if (shouldCacheTextures) texturePackResources.put(pack.UID, pack);
+                    else textureStreamingResources.put(pack.UID, entry);
                 }
+            } catch (IOException ex) {
+                System.err.println("An error occurred opening read stream to " + pair.first());
+                return;
             }
         }
 
@@ -318,13 +322,41 @@ public class UFGModelExporter {
             byte[] stream = null;
             if (texturePackResources.containsKey(texture.alphaStateSampler))
                 stream = ((TexturePack) texturePackResources.get(texture.alphaStateSampler)).stream;
-            else if (textureStreamingResources.containsKey(texture.alphaStateSampler))
-                stream = textureStreamingResources.get(texture.alphaStateSampler).getTexturePackData();
-            else {
+
+            if (stream == null) {
                 System.err.println("Couldn't find data for " + texture.name);
                 continue;
             }
             
+            try { 
+                FileIO.write(texture.toPNG(stream), new File(folder, texture.name + ".PNG").getAbsolutePath());
+            } catch (Exception ex) {
+                System.err.println("An error occurred converting " + texture.name + " to PNG!");
+            }
+        }
+
+        if (shouldCacheTextures) return;
+        
+        // This is kind of slow, but best we can do to keep memory use low
+        // as well as with the fact the index doesn't store whether something
+        // is a texture or just data
+        for (ChunkFileIndexEntry entry: textureStreamingResources.values()) {
+            byte[] data = entry.getData();
+            if (data == null) continue;
+            Chunk chunk = Chunk.loadChunk(data);
+            if (chunk.UID != ResourceType.TEXTURE_DESCRIPTOR.getValue()) continue;
+
+            Texture texture = chunk.loadResource(Texture.class);
+
+            byte[] stream = null;
+            if (textureStreamingResources.containsKey(texture.alphaStateSampler))
+                stream = (textureStreamingResources.get(texture.alphaStateSampler)).getTexturePackData();
+                        
+            if (stream == null) {
+                System.err.println("Couldn't find data for " + texture.name);
+                continue;
+            }
+
             try { 
                 FileIO.write(texture.toPNG(stream), new File(folder, texture.name + ".PNG").getAbsolutePath());
             } catch (Exception ex) {

@@ -102,12 +102,16 @@ public class MeshExporter {
             else if (this.textureStreamingResources.containsKey(textureUID))
                 texture = this.textureStreamingResources.get(textureUID).loadData(ufg.resources.Texture.class);
 
+            if (texture == null) return null;
+
             // in MNR, imageDataPosition for image starts after ResourceData
             // in KARTING, imageDataPosition starts at beginning of chunk
 
             byte[] stream = null;
+
             if (this.texturePackResources.containsKey(texture.alphaStateSampler))
                 stream = ((TexturePack) this.texturePackResources.get(texture.alphaStateSampler)).stream;
+            
             else if (this.textureStreamingResources.containsKey(texture.alphaStateSampler))
                 stream = this.textureStreamingResources.get(texture.alphaStateSampler).getTexturePackData();
             
