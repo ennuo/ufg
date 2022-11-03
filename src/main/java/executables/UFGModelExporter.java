@@ -34,20 +34,8 @@ public class UFGModelExporter {
     }
 
     public static void main(String[] args) {
-
         String game = null;
         File folder = null;
-        
-        // args = new String[] {
-        //     "-g",
-        //     "modnation",
-        //     "C:/Users/Aidan/Desktop/MODELS.BIN",
-        //     "-o",
-        //     "C:/Users/Aidan/Desktop/EXPORT",
-        //     "-tp",
-        //     "C:/Users/Aidan/Desktop/TEXTUREPACK.PERM.BIN",
-        //     "C:/Users/Aidan/Desktop/TEXTUREPACK.TEMP.BIN"
-        // };
 
         if (args.length < 5) {
             System.out.println("UFG Model Exporter by ennuo\n");
