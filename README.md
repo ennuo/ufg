@@ -6,7 +6,7 @@ Tools for working with games made by UFG, mainly supports Modnation Racers and L
 
 ### [Model Exporter](https://github.com/ennuo/ufg/tree/main/exporter)
 
-CLI utility for exporting model and mesh data.
+CLI utility for exporting texture and mesh data.
 
 ### [Model Assembler](https://github.com/ennuo/ufg/tree/main/assembler)
 
