@@ -1,6 +1,7 @@
 package ufg.enums;
 
 public enum VertexStreamElementType {
+    FLOAT2,
     FLOAT3,
     FLOAT4,
     HALF2,

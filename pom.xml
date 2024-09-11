@@ -13,5 +13,7 @@
         <module>ufg</module>
         <module>exporter</module>
         <module>assembler</module>
+        <module>decompressor</module>
+        <module>workspace</module>
     </modules>
 </project>

@@ -7,13 +7,15 @@ import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
-import ufg.io.Serializer;
 import de.javagl.jgltf.model.AccessorModel;
 import de.javagl.jgltf.model.MaterialModel;
 import de.javagl.jgltf.model.MeshModel;
@@ -27,8 +29,10 @@ import ufg.enums.BufferType;
 import ufg.enums.PrimitiveType;
 import ufg.enums.ResourceType;
 import ufg.enums.VertexStreamElementUsage;
+import ufg.io.Serializer;
 import ufg.resources.BonePalette;
 import ufg.resources.Buffer;
+import ufg.resources.Locators;
 import ufg.resources.Material;
 import ufg.resources.Model;
 import ufg.resources.Texture;
@@ -41,6 +45,7 @@ import ufg.util.UFGCRC;
 public class MeshChunker {
     public static class MeshChunkerResult {
         public Chunk[] modelStreamingChunks;
+        public Chunk[] materialStreamingChunks;
         public Texture[] textureStreamingChunks;
         public byte[][] texturePackData;
     }
@@ -68,15 +73,32 @@ public class MeshChunker {
         //     palette.addBone(bone);
 
         return palette;
+    }
 
+    private static BonePalette createKartSkeleton() {
+        BonePalette palette = new BonePalette();
+        palette.name = "KART.BonePalette";
+        palette.UID = UFGCRC.qStringHashUpper32(palette.name);
+        // String[] bones = new String[] {
+        //     "MARKER_ROOT", "MARKER_R_F_ROOT", "MARKER_R_B_ROOT", "MARKER_R_B_BONE", "MARKER_L_B_BONE", "MARKER_L_B_ROOT",
+        //     "MARKER_L_F_ROOT", "MARKER_L_F_BONE", "MARKER_R_F_BONE"
+        // };
+        String[] bones = new String[] {
+            "MARKER_ROOT", "MARKER_R_F_BONE", "MARKER_R_F_ROOT", "MARKER_L_F_BONE", "MARKER_L_F_ROOT", "MARKER_R_B_BONE",
+            "MARKER_R_B_ROOT", "MARKER_L_B_BONE", "MARKER_L_B_ROOT"
+        };
+
+        for (String bone : bones)
+            palette.addBone(bone);
+        return palette;
     }
 
     private static String mapSabaBone(String name) {
         String original = name;
         name = name.toLowerCase();
 
-        if (name.contains("tongue03")) name = "bone_tongue02";
-        if (name.contains("tongue04")) name = "bone_tongue02";
+        // if (name.contains("tongue03")) name = "bone_tongue02";
+        // if (name.contains("tongue04")) name = "bone_tongue02";
 
         if (name.equals("tongue_1_0")) name = "bone_tongue01";
         if (name.equals("tongue_1_1")) name = "bone_tongue02";
@@ -147,7 +169,10 @@ public class MeshChunker {
         if (name.equals("l_knee_1")) name ="Bip01 L Calf";
 
         if (name.equals("l_knee_1_roll_01")) name = "Bip01 L Calf";
+        if (name.equals("l_knee_1_scale_01")) name = "Bip01 L Calf";
+
         if (name.equals("r_knee_1_roll_01")) name = "Bip01 R Calf";
+        if (name.equals("r_knee_1_scale_01")) name = "Bip01 R Calf";
 
         if (name.equals("l_knee_1_roll_02")) name = "Bip01 L Calf";
         if (name.equals("r_knee_1_roll_02")) name = "Bip01 R Calf";
@@ -220,8 +245,12 @@ public class MeshChunker {
         if (name.equals("r_ear_1")) name = "Bip01 Head";
         if (name.equals("r_ear_2")) name = "Bip01 Head";
         if (name.equals("r_ear_3")) name = "Bip01 Head";
+        if (name.equals("f_zipper_1_0")) name = "bone_zip_pull01";
 
-        if (name.equals(original.toLowerCase())) return original;
+        if (name.equals(original.toLowerCase())) {
+            // System.out.println("Unmapped bone! " + original);
+            return original;
+        }
         return name;
     }
     
@@ -231,18 +260,50 @@ public class MeshChunker {
         return palette.addBone(name);
     }
 
-    public static MeshChunkerResult getMeshChunkData(String meshName, String glbSourcePath) {
+    public static enum ImportType {
+        Costume,
+        KartBody,
+        KartSuspension,
+        KartEffect,
+        KartPart
+    }
+
+    public static class MeshImportData {
+        public String name;
+        public String source;
+        public ImportType type = ImportType.Costume;
+        public boolean invisible = false;
+        public String suffix;
+
+        public MeshImportData(String name, String source, ImportType type, String suffix) {
+            this.name = name;
+            this.source = source;
+            this.type = type;
+            this.suffix = "_" + suffix;
+        }
+    }
+
+
+    public static MeshChunkerResult getMeshChunkData(MeshImportData config) {
         bones = new HashSet<>();
-        meshName = meshName.toUpperCase();
+        String meshName = config.name.toUpperCase();
 
         MeshChunkerResult result = new MeshChunkerResult();
 
-        BonePalette skeleton = MeshChunker.createSackboySkeleton();
+        BonePalette skeleton;
+        if (config.type == ImportType.Costume)
+            skeleton = MeshChunker.createSackboySkeleton();
+        else
+            skeleton = MeshChunker.createKartSkeleton();
 
         ArrayList<Chunk> chunks = new ArrayList<>();
+        ArrayList<Chunk> materialChunks = new ArrayList<>();
+
+        // String suffix = config.type == ImportType.KartEffect ? "" : "_A";
+        String suffix = config.suffix;
 
         GltfModelV2 gltf;
-        try { gltf = (GltfModelV2) new GltfModelReader().read(Path.of(glbSourcePath).toUri()); }
+        try { gltf = (GltfModelV2) new GltfModelReader().read(Path.of(config.source).toUri()); }
         catch (IOException ex) { return null; }
 
         // Right now we're only supporting single model meshes.
@@ -257,6 +318,7 @@ public class MeshChunker {
         }
 
         if (glMesh == null) return null;
+        boolean isSkinned = glSkin != null;
 
         int totalVertCount = glMesh.getMeshPrimitiveModels()
                     .stream()
@@ -284,16 +346,31 @@ public class MeshChunker {
         int[] primitiveStarts = new int[primitiveCount];
         int[] primitiveCounts = new int[primitiveCount];
         int[] materialUIDs = new int[primitiveCount];
-        
+
+        ArrayList<byte[]> texturePackData = new ArrayList<>();
+        ArrayList<Texture> textureStreamingChunks = new ArrayList<>();
+
         Vector3f min = new Vector3f(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY);
         Vector3f max = new Vector3f(Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY);
 
-        VertexStreamDescriptor decl = VertexStreams.get("VertexDecl.SkinnedCol");
-        Buffer[] buffers = decl.create(meshName + "_A", totalVertCount);
+        String vertexStreamType = "VertexDecl.KartWorld";
+        if (config.type == ImportType.KartBody || config.type == ImportType.KartPart) vertexStreamType = "VertexDecl.KartWorld1UV";
+        else if (isSkinned) vertexStreamType = "VertexDecl.SkinnedCol";
+
+
+        boolean overrideSkin = false;
+        if (config.type == ImportType.KartSuspension && !isSkinned) {
+            vertexStreamType = "VertexDecl.SkinnedCol";
+            overrideSkin = true;
+            isSkinned = true;
+        }
+
+        VertexStreamDescriptor decl = VertexStreams.get(vertexStreamType);
+        Buffer[] buffers = decl.create(meshName + suffix, totalVertCount);
 
         Buffer indexBuffer = new Buffer();
-        indexBuffer.name = meshName + "_A.IndexBuffer";
-        indexBuffer.UID = UFGCRC.qStringHash32(indexBuffer.name);
+        indexBuffer.name = meshName + suffix + ".IndexBuffer";
+        indexBuffer.UID = UFGCRC.qStringHashUpper32(indexBuffer.name);
         indexBuffer.elementByteSize = 2;
         indexBuffer.numElements = totalIndexCount;
         indexBuffer.type = BufferType.INDEX;
@@ -304,33 +381,43 @@ public class MeshChunker {
 
             MaterialModel glMaterial = primitive.getMaterialModel();
             Map<String, AccessorModel> attributes = primitive.getAttributes();
-
+            
             int vertexCount = attributes.get("POSITION").getCount();
     
             FloatBuffer positionBuffer = attributes.get("POSITION").getAccessorData().createByteBuffer().asFloatBuffer();
             FloatBuffer normalBuffer = attributes.get("NORMAL").getAccessorData().createByteBuffer().asFloatBuffer();
             FloatBuffer uvBuffer = attributes.get("TEXCOORD_0").getAccessorData().createByteBuffer().asFloatBuffer();
             FloatBuffer tangentBuffer = attributes.get("TANGENT").getAccessorData().createByteBuffer().asFloatBuffer();
-            FloatBuffer weightBuffer = attributes.get("WEIGHTS_0").getAccessorData().createByteBuffer().asFloatBuffer();
-            ByteBuffer blendIndexBuffer = attributes.get("JOINTS_0").getAccessorData().createByteBuffer();
+
+            FloatBuffer weightBuffer = null;
+            ByteBuffer blendIndexBuffer = null;
+            if (isSkinned && !overrideSkin) {
+                weightBuffer = attributes.get("WEIGHTS_0").getAccessorData().createByteBuffer().asFloatBuffer();
+                blendIndexBuffer = attributes.get("JOINTS_0").getAccessorData().createByteBuffer();
+            }
     
     
             for (int i = baseVert; i < baseVert + vertexCount; ++i) {
     
-                blendIndices[i] = new Vector4f(
-                    getBoneIndex(glSkin.getJoints().get(blendIndexBuffer.get()).getName(), skeleton),
-                    getBoneIndex(glSkin.getJoints().get(blendIndexBuffer.get()).getName(), skeleton),
-                    getBoneIndex(glSkin.getJoints().get(blendIndexBuffer.get()).getName(), skeleton),
-                    getBoneIndex(glSkin.getJoints().get(blendIndexBuffer.get()).getName(), skeleton)
-                );
-    
-                blendWeights[i] = new Vector4f(
-                    weightBuffer.get(),
-                    weightBuffer.get(),
-                    weightBuffer.get(),
-                    weightBuffer.get()
-                );
-    
+                if (isSkinned && !overrideSkin) {
+                    blendIndices[i] = new Vector4f(
+                        getBoneIndex(glSkin.getJoints().get(blendIndexBuffer.get()).getName(), skeleton),
+                        getBoneIndex(glSkin.getJoints().get(blendIndexBuffer.get()).getName(), skeleton),
+                        getBoneIndex(glSkin.getJoints().get(blendIndexBuffer.get()).getName(), skeleton),
+                        getBoneIndex(glSkin.getJoints().get(blendIndexBuffer.get()).getName(), skeleton)
+                    );
+        
+                    blendWeights[i] = new Vector4f(
+                        weightBuffer.get(),
+                        weightBuffer.get(),
+                        weightBuffer.get(),
+                        weightBuffer.get()
+                    );
+                } else if (overrideSkin) {
+                    blendIndices[i] = new Vector4f(0, 0, 0, 0);
+                    blendWeights[i] = new Vector4f(1.0f, 0.0f, 0.0f, 0.0f);
+                }
+
                 colors[i] = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
     
                 float x = positionBuffer.get();
@@ -386,28 +473,55 @@ public class MeshChunker {
             baseIndex += indexBufferSize;
             baseVert += vertexCount;
 
-            Material material = Material.createVinylShader(
-                meshName + "_A." + glMaterial.getName().toLowerCase(),
-                meshName + "_D.TGA",
-                meshName + "_N.TGA",
-                meshName + "_S.TGA"
-            );
+            boolean hasDiffuse = glMaterial.getValues().get("baseColorTexture") != null;
+            boolean hasNormals = glMaterial.getValues().get("normalTexture") != null;
+            boolean hasSpecular = glMaterial.getValues().get("metallicRoughnessTexture") != null;
 
-            int normalTextureIndex = (int) glMaterial.getValues().get("normalTexture");
-            int diffuseTextureIndex = (int) glMaterial.getValues().get("baseColorTexture");
-            int specularTextureIndex = (int) glMaterial.getValues().get("metallicRoughnessTexture");
+            Material material;
+            String materialName = String.format("%s%s_%d.%s", meshName, suffix, p, glMaterial.getName().toLowerCase());
+            if (!config.invisible) 
+            {
+                String diffuse = hasDiffuse ? String.format("%s_%d_D", meshName, p) : null;
+                String normal = hasNormals ? String.format("%s_%d_N", meshName, p) : null;
+                String specular = hasSpecular ? String.format("%s_%d_s", meshName, p): null;
 
-            TextureChunkerResult normalTexture = TextureChunker.convertTextureData(meshName + "_N.TGA", gltf.getTextureModels().get(normalTextureIndex).getImageModel().getImageData());
-            TextureChunkerResult diffuseTexture = TextureChunker.convertTextureData(meshName + "_D.TGA", gltf.getTextureModels().get(diffuseTextureIndex).getImageModel().getImageData());
-            TextureChunkerResult specularTexture = TextureChunker.convertTextureData(meshName + "_S.TGA", gltf.getTextureModels().get(specularTextureIndex).getImageModel().getImageData());
+                if (config.type == ImportType.Costume) material = Material.createVinylShader(materialName, diffuse, normal, specular);
+                else if (config.type == ImportType.KartPart) material = Material.createKartPartShader(materialName, diffuse, normal, specular);
+                else if (isSkinned) material = Material.createSkinnedKartShader(materialName, diffuse, normal, specular);
+                else material = Material.createKartShader(materialName, diffuse, normal, specular);
+
+            } else material = Material.createSimpleShader(materialName);
 
 
-            result.texturePackData = new byte[][] { diffuseTexture.data, normalTexture.data, specularTexture.data };
-            result.textureStreamingChunks = new Texture[] { diffuseTexture.texture, normalTexture.texture, specularTexture.texture };
+            if (hasDiffuse) {
+                int diffuseTextureIndex = (int) glMaterial.getValues().get("baseColorTexture");
+
+                {
+                    TextureChunkerResult diffuseTexture = TextureChunker.convertTextureData(String.format("%s_%d_D", meshName, p), gltf.getTextureModels().get(diffuseTextureIndex).getImageModel().getImageData(), "256");
+                    texturePackData.add(diffuseTexture.data);
+                    textureStreamingChunks.add(diffuseTexture.texture);
+                }
+            }
+
+            if (hasNormals) {
+                int normalTextureIndex = (int) glMaterial.getValues().get("normalTexture");
+                TextureChunkerResult normalTexture = TextureChunker.convertTextureData(String.format("%s_%d_N", meshName, p), gltf.getTextureModels().get(normalTextureIndex).getImageModel().getImageData(), "128");
+
+                texturePackData.add(normalTexture.data);
+                textureStreamingChunks.add(normalTexture.texture);
+            }
+
+            if (hasSpecular) {
+                int specularTextureIndex = (int) glMaterial.getValues().get("metallicRoughnessTexture");
+                TextureChunkerResult specularTexture = TextureChunker.convertTextureData(String.format("%s_%d_S", meshName, p), gltf.getTextureModels().get(specularTextureIndex).getImageModel().getImageData(), "128");
+
+                texturePackData.add(specularTexture.data);
+                textureStreamingChunks.add(specularTexture.texture);
+            }
 
             Serializer serializer = new Serializer(material.getAllocatedSize());
             serializer.struct(material, Material.class);
-            chunks.add(new Chunk(ResourceType.MATERIAL.getValue(), serializer.getBuffer()));
+            materialChunks.add(new Chunk(ResourceType.MATERIAL.getValue(), serializer.getBuffer()));
 
             materialUIDs[p] = material.UID;
         }
@@ -418,15 +532,17 @@ public class MeshChunker {
         decl.set(buffers, VertexStreamElementUsage.TANGENT, tangents);
         decl.set(buffers, VertexStreamElementUsage.COLOR0, colors);
 
-        decl.set(buffers, VertexStreamElementUsage.BLENDINDEX, blendIndices);
-        decl.set(buffers, VertexStreamElementUsage.BLENDWEIGHT, blendWeights);
+        if (isSkinned) {
+            decl.set(buffers, VertexStreamElementUsage.BLENDINDEX, blendIndices);
+            decl.set(buffers, VertexStreamElementUsage.BLENDWEIGHT, blendWeights);
+        }
 
-        
-
-        for (int i = 0; i < 3; ++i) {
-            Serializer serializer = new Serializer(buffers[i].getAllocatedSize());
-            serializer.struct(buffers[i], Buffer.class);
-            chunks.add(new Chunk(ResourceType.BUFFER.getValue(), serializer.getBuffer()));
+        if (isSkinned) {
+            skeleton.name = meshName + suffix + ".BonePalette";
+            skeleton.UID = UFGCRC.qStringHashUpper32(skeleton.name);
+            Serializer serializer = new Serializer(skeleton.getAllocatedSize());
+            serializer.struct(skeleton, BonePalette.class);
+            chunks.add(new Chunk(ResourceType.BONE_PALETTE.getValue(), serializer.getBuffer()));
         }
 
         {
@@ -435,20 +551,60 @@ public class MeshChunker {
             chunks.add(new Chunk(ResourceType.BUFFER.getValue(), serializer.getBuffer()));
         }
 
-        {
-            skeleton.name = meshName + "_A.BonePalette";
-            skeleton.UID = UFGCRC.qStringHash32(skeleton.name);
-            Serializer serializer = new Serializer(skeleton.getAllocatedSize());
-            serializer.struct(skeleton, BonePalette.class);
-            chunks.add(new Chunk(ResourceType.BONE_PALETTE.getValue(), serializer.getBuffer()));
+        for (int i = 0; i < decl.getMaxStreams(); ++i) {
+            Serializer serializer = new Serializer(buffers[i].getAllocatedSize());
+            serializer.struct(buffers[i], Buffer.class);
+            chunks.add(new Chunk(ResourceType.BUFFER.getValue(), serializer.getBuffer()));
         }
 
         {
             Model model = new Model();
 
+            HashMap<String, Matrix4f> locators = new HashMap<>();
+            for (NodeModel node : gltf.getNodeModels()) {
+                if (node.getName().toUpperCase().startsWith("MARKER")) {
+                    Matrix4f locMatrix = new Matrix4f();
+                    float[] nodeMatrix = node.getMatrix();
+                    if (nodeMatrix != null) locMatrix.set(nodeMatrix);
+                    else {
+
+                        Vector3f translation = new Vector3f();
+                        if (node.getTranslation() != null)
+                            translation.set(node.getTranslation());
+                        Vector4f rotation = new Vector4f(0.0f, 0.0f, 0.0f, 1.0f);
+                        if (node.getRotation() != null)
+                            rotation.set(node.getRotation());
+                        Vector3f scale = new Vector3f(1.0f, 1.0f, 1.0f);
+                        if (node.getScale() != null)
+                            scale.set(node.getScale());
+
+                        locMatrix.identity()
+                            .translationRotateScale(
+                                translation, 
+                                new Quaternionf(rotation.x, rotation.y, rotation.z, rotation.w), 
+                                scale
+                            );
+                    }
+
+                    locators.put(node.getName().split("[.]")[0], locMatrix);
+                }
+            }
+
+            if (locators.size() != 0) {
+                Locators loc = new Locators();
+                loc.locators = locators;
+                loc.name = meshName + suffix + ".Locators";
+                loc.UID = UFGCRC.qStringHashUpper32(loc.name);
+                Serializer serializer = new Serializer(loc.getAllocatedSize());
+                serializer.struct(loc, Locators.class);
+                chunks.add(new Chunk(ResourceType.LOCATORS.getValue(), serializer.getBuffer()));
+                model.locatorsUID = loc.UID;
+            }
+
             model.minAABB = min;
             model.maxAABB = max;
-            model.bonePaletteUID = skeleton.UID;
+            if (isSkinned)
+                model.bonePaletteUID = skeleton.UID;
 
             Mesh[] meshes = new Mesh[primitiveCount];
             for (int i = 0; i < meshes.length; ++i) {
@@ -459,9 +615,8 @@ public class MeshChunker {
                 mesh.indexStart = primitiveStarts[i];
                 mesh.numPrimitives = primitiveCounts[i];
                 mesh.vertexDeclUID = decl.getNameUID();
-                mesh.vertexBufferUIDs[0] = buffers[0].UID;
-                mesh.vertexBufferUIDs[1] = buffers[1].UID;
-                mesh.vertexBufferUIDs[2] = buffers[2].UID;
+                for (int j = 0; j < decl.getMaxStreams(); ++j)
+                    mesh.vertexBufferUIDs[j] = buffers[j].UID;
     
                 mesh.primitiveType = PrimitiveType.TRIANGLE_LIST;
 
@@ -470,8 +625,8 @@ public class MeshChunker {
             
             model.meshes = meshes;
 
-            model.name = meshName + "_A";
-            model.UID = UFGCRC.qStringHash32(model.name);
+            model.name = meshName + suffix;
+            model.UID = UFGCRC.qStringHashUpper32(model.name);
             model.numPrims = totalIndexCount / 0x3;
             
             Serializer serializer = new Serializer(model.getAllocatedSize());
@@ -480,8 +635,9 @@ public class MeshChunker {
         }
 
         result.modelStreamingChunks = chunks.toArray(Chunk[]::new);
-
-        System.out.println(bones);
+        result.texturePackData = texturePackData.toArray(byte[][]::new);
+        result.textureStreamingChunks = textureStreamingChunks.toArray(Texture[]::new);
+        result.materialStreamingChunks = materialChunks.toArray(Chunk[]::new);
 
         return result;
     }

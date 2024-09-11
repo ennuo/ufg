@@ -4,14 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 
-import ufg.util.Bytes;
-import ufg.util.DecompressLZ;
-import ufg.util.ExecutionContext;
-import ufg.util.FileIO;
-import ufg.util.UFGCRC;
+import ufg.enums.GameVersion;
 import ufg.enums.ResourceType;
 import ufg.io.MeshExporter;
 import ufg.resources.ChunkFileIndex;
@@ -21,6 +16,11 @@ import ufg.resources.TexturePack;
 import ufg.structures.chunks.Chunk;
 import ufg.structures.chunks.ChunkFileIndexEntry;
 import ufg.structures.chunks.ResourceData;
+import ufg.util.Bytes;
+import ufg.util.DecompressLZ;
+import ufg.util.ExecutionContext;
+import ufg.util.FileIO;
+import ufg.util.UFGCRC;
 
 public class UFGModelExporter {
     public static class StringPair {
@@ -55,7 +55,7 @@ public class UFGModelExporter {
             System.out.println("NOTE: You may specify multiple texture packs and model packs by repeating respective arguments.\n");
             
             System.out.println("Arguments:");
-            System.out.println("\t--game, -g <game>\n\tSpecifies which game source data is from.\n\tSupported games are mnr/modnation and karting/lbpk\n");
+            System.out.println("\t--game, -g <game>\n\tSpecifies which game source data is from.\n\tSupported games are mnr/modnation, karting/lbpk, and lbpkproto\n");
             System.out.println("\t--output, -o <output_folder>\n\tSpecifies what folder to store output\n");
             System.out.println("\t--texture-pack, -tp <perm.bin> <temp.bin>\n\tLoads a texture pack\n");
             System.out.println("\t--texture-pack-stream, -tps <perm.bin> <.idx>\n\tLoads an indexed texture pack stream\n");
@@ -132,8 +132,9 @@ public class UFGModelExporter {
             return;
         }
 
-        if (game.equals("karting") || game.equals("lbpk")) ExecutionContext.IS_MODNATION_RACERS = false;
-        else if (game.equals("modnation") || game.equals("mnr")) ExecutionContext.IS_MODNATION_RACERS = true;
+        if (game.equals("karting") || game.equals("lbpk")) ExecutionContext.Version = GameVersion.Karting;
+        else if (game.equals("modnation") || game.equals("mnr")) ExecutionContext.Version = GameVersion.ModNation;
+        else if (game.equals("lbpkproto")) ExecutionContext.Version = GameVersion.KartingMilestone;
         else {
             System.err.println("Invalid game was specified!");
             return;
@@ -211,7 +212,7 @@ public class UFGModelExporter {
                         throw new RuntimeException("Found unexpected resource in texture pack!");
 
                     TexturePack pack = null;
-                    if (ExecutionContext.IS_MODNATION_RACERS) {
+                    if (ExecutionContext.isModNation()) {
                         try { pack = Chunk.loadChunk(section).loadResource(TexturePack.class); }
                         catch (Exception ex) {
                             System.err.println("An error occurred processing texture pack: " + pair.second());
@@ -255,7 +256,7 @@ public class UFGModelExporter {
             // Karting offsets for textures start from the absolute start of the file
             // Modnation offsets are relative to the start of the data
             TexturePack pack = null;
-            if (ExecutionContext.IS_MODNATION_RACERS) {
+            if (ExecutionContext.isModNation()) {
                 try { pack = Chunk.loadChunk(bin).loadResource(TexturePack.class); }
                 catch (Exception ex) {
                     System.err.println("An error occurred processing texture pack: " + pair.second());
@@ -296,6 +297,7 @@ public class UFGModelExporter {
                 }
             } catch (Exception ex) {
                 System.err.println("Failed to process all resource data in " + modelPack);
+                ex.printStackTrace();
                 return;
             }
         }

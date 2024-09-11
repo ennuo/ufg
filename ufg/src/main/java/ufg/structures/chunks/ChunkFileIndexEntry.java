@@ -1,5 +1,9 @@
 package ufg.structures.chunks;
 
+import java.io.File;
+import java.io.RandomAccessFile;
+
+import ufg.enums.BuildType;
 import ufg.io.Serializable;
 import ufg.io.Serializer;
 import ufg.resources.TexturePack;
@@ -7,16 +11,10 @@ import ufg.util.Bytes;
 import ufg.util.DecompressLZ;
 import ufg.util.ExecutionContext;
 
-import java.io.File;
-import java.io.RandomAccessFile;
-import java.util.Arrays;
-
-import ufg.enums.BuildType;
-
 public class ChunkFileIndexEntry implements Serializable {
     public static final int BASE_ALLOCATION_SIZE = 0x14;
 
-    public File handle;
+    public transient File handle;
 
     public int filenameUID;
     public int byteSize;
@@ -57,7 +55,7 @@ public class ChunkFileIndexEntry implements Serializable {
     }
 
     public byte[] getTexturePackData() {
-        if (ExecutionContext.IS_MODNATION_RACERS) {
+        if (ExecutionContext.isModNation()) {
             TexturePack pack = this.loadData(TexturePack.class);
             if (pack != null)
                 return pack.stream;

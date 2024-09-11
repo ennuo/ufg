@@ -30,7 +30,7 @@ public enum AlphaState implements ValueEnum<Integer> {
 
     public Integer getValue() { return this.value; }
 
-    public static AlphaState fromValue(byte value) {
+    public static AlphaState fromValue(int value) {
         for (AlphaState state : AlphaState.values()) {
             if (state.value == value) 
                 return state;

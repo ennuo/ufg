@@ -62,12 +62,14 @@ public class VertexStreamDescriptor {
     
     private VertexStreamElement[] elements = new VertexStreamElement[16];
     private int[] streamSizes = new int[4];
+    private int maxStreams = 0;
 
     public VertexStreamDescriptor(String name, int nameUID) {
         this.name = name;
         this.nameUID = nameUID;
     }
 
+    public int getMaxStreams() { return this.maxStreams; }
     public String getName() { return this.name; }
     public int getNameUID() { return this.nameUID; }
 
@@ -109,6 +111,11 @@ public class VertexStreamDescriptor {
             stream.seek((i * streamSize) + element.offset, SeekMode.Begin);
             Vector4f value = data[i];
             switch (element.type) {
+                case FLOAT2: {
+                    stream.f32(value.x);
+                    stream.f32(value.y);
+                    break;
+                }
                 case FLOAT3: {
                     stream.f32(value.x);
                     stream.f32(value.y);
@@ -334,6 +341,8 @@ public class VertexStreamDescriptor {
 
         this.elements[usage.getIndex()] = element;
         this.streamSizes[stream] += element.size;
+        
+        if ((stream + 1) > maxStreams)
+            maxStreams = (stream + 1);
     }
-
 }

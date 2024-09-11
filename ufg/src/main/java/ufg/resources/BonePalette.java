@@ -1,10 +1,10 @@
 package ufg.resources;
 
-import ufg.util.ExecutionContext;
-import ufg.util.UFGCRC;
 import ufg.io.Serializable;
 import ufg.io.Serializer;
 import ufg.structures.chunks.ResourceData;
+import ufg.util.ExecutionContext;
+import ufg.util.UFGCRC;
 
 public class BonePalette extends ResourceData {
     public static final int BASE_ALLOCATION_SIZE = 0x40 + 0xc0;
@@ -61,7 +61,7 @@ public class BonePalette extends ResourceData {
         boneNameOffset += serializer.i32(0xb8);
 
         int boneUIDOffset = 0, boneFullUIDOffset = 0;
-        if (!ExecutionContext.IS_MODNATION_RACERS) {
+        if (!ExecutionContext.isModNation()) {
             boneUIDOffset = serializer.getOffset();
             boneUIDOffset += serializer.i32(0xb4 + (palette.numBoneIndices * 0x40));
     
@@ -78,7 +78,7 @@ public class BonePalette extends ResourceData {
         for (int i = 0; i < palette.numBoneIndices; ++i)
             palette.boneNames[i] = serializer.str(palette.boneNames[i], 0x40);
 
-        if (!ExecutionContext.IS_MODNATION_RACERS) {
+        if (!ExecutionContext.isModNation()) {
             serializer.seek(boneUIDOffset);
             for (int i = 0; i < palette.numBoneIndices; ++i)
                 palette.boneUIDs[i] = serializer.i32(palette.boneUIDs[i]);

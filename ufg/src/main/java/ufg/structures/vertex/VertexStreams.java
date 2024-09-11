@@ -18,6 +18,41 @@ public class VertexStreams {
         VertexStreams.NAME_LOOKUP.put(name, stream);
         return stream;
     }
+    
+
+    static {
+        VertexStreamDescriptor stream = VertexStreams.add("VertexDecl.TerrainStitch", 0xc99ae7f6);
+
+        stream.addElement(
+            VertexStreamElementUsage.POSITION,
+            VertexStreamElementType.HALF3,
+            0
+        );
+
+        stream.addElement(
+            VertexStreamElementUsage.TANGENT,
+            VertexStreamElementType.HALF3,
+            0
+        );
+
+        stream.addElement(
+            VertexStreamElementUsage.NORMAL,
+            VertexStreamElementType.HALF3,
+            0
+        );
+
+        stream.addElement(
+            VertexStreamElementUsage.TEXCOORD0,
+            VertexStreamElementType.HALF2,
+            0
+        );
+
+        stream.addElement(
+            VertexStreamElementUsage.TEXCOORD1,
+            VertexStreamElementType.HALF2,
+            0
+        );
+    }
 
     static {
         VertexStreamDescriptor stream = VertexStreams.add("VertexDecl.SkinnedCol", 0xc3092f93);

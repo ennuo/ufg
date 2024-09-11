@@ -1,12 +1,6 @@
 package ufg.resources;
 
-import ufg.util.DDS;
-import ufg.util.ExecutionContext;
-import ufg.util.FileIO;
-import ufg.util.UFGCRC;
-import ufg.io.Serializable;
-import ufg.io.Serializer;
-
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
@@ -18,9 +12,12 @@ import ufg.enums.TextureFilter;
 import ufg.enums.TextureFlags;
 import ufg.enums.TextureFormat;
 import ufg.enums.TextureType;
+import ufg.io.Serializable;
+import ufg.io.Serializer;
 import ufg.structures.chunks.ResourceData;
-
-import java.awt.image.BufferedImage;
+import ufg.util.DDS;
+import ufg.util.ExecutionContext;
+import ufg.util.UFGCRC;
 
 public class Texture extends ResourceData {
     public static final int BASE_ALLOCATION_SIZE = 0x100;
@@ -49,7 +46,8 @@ public class Texture extends ResourceData {
 
     public Texture() { this.typeUID = UFGCRC.qStringHash32("Illusion.Texture"); }
 
-    public byte[] toPNG(byte[] texturePack) {
+    public byte[] toPNG(byte[] texturePack) { return this.toPNG(texturePack, false); }
+    public byte[] toPNG(byte[] texturePack, boolean asDDS) {
         if (texturePack == null) return null;
         
         byte[] header = DDS.getDDSHeader(this);
@@ -59,6 +57,8 @@ public class Texture extends ResourceData {
         byte[] dds = new byte[rawData.length + header.length];
         System.arraycopy(header, 0, dds, 0, header.length);
         System.arraycopy(rawData, 0, dds, header.length, rawData.length);
+
+        if (asDDS) return dds;
 
         BufferedImage image = DDS.toBufferedImage(dds);
         if (image == null) return null;
@@ -95,7 +95,7 @@ public class Texture extends ResourceData {
 
         serializer.pad(0xC);
         texture.alphaStateSampler = serializer.i32(texture.alphaStateSampler);
-        if (!ExecutionContext.IS_MODNATION_RACERS)
+        if (!ExecutionContext.isModNation())
             serializer.pad(0x8);
 
         texture.imageDataPosition = serializer.i32(texture.imageDataPosition);
@@ -105,7 +105,7 @@ public class Texture extends ResourceData {
         // and what's just alignment, it doesn't really affect much in terms
         // of practical use, but even still.
         // Blagh!
-        if (ExecutionContext.IS_MODNATION_RACERS) {
+        if (ExecutionContext.isModNation()) {
             serializer.i32(0x50);
             serializer.pad(0xC);
             serializer.i32(0x60);
@@ -123,6 +123,15 @@ public class Texture extends ResourceData {
         serializer.pad(0xa);
 
         return texture;
+    }
+
+    public int getSamplerAddressFlags() {
+        return flags & 0xf;
+    }
+
+    public void setSamplerAddressFlags(int flags) {
+        this.flags &= 0xfffffff0;
+        this.flags |= flags;
     }
 
     @Override public int getAllocatedSize() {

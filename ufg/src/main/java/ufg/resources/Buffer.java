@@ -1,10 +1,11 @@
 package ufg.resources;
 
-import ufg.io.Serializable;
-import ufg.io.Serializer;
 import ufg.enums.BufferFlags;
 import ufg.enums.BufferType;
+import ufg.io.Serializable;
+import ufg.io.Serializer;
 import ufg.structures.chunks.ResourceData;
+import ufg.util.Bytes;
 import ufg.util.UFGCRC;
 
 public class Buffer extends ResourceData {
@@ -47,6 +48,8 @@ public class Buffer extends ResourceData {
         serializer.seek(memoryPoolOffset + 3);
         serializer.str("BA0", 3);
         serializer.seek(dataOffset);
+
+        
         
         if (serializer.isWriting()) serializer.getOutput().bytes(buffer.data);
         else buffer.data = serializer.getInput().bytes(dataSize);
@@ -59,5 +62,9 @@ public class Buffer extends ResourceData {
 
     @Override public int getAllocatedSize() {
         return Buffer.BASE_ALLOCATION_SIZE + this.data.length + 0x10;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Bytes.toHex(UFGCRC.qStringHash32("iShader")));
     }
 }

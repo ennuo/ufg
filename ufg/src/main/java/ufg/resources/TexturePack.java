@@ -13,7 +13,7 @@ public class TexturePack extends ResourceData {
     @Override public TexturePack serialize(Serializer serializer, Serializable structure) {
         TexturePack pack = (structure == null) ? new TexturePack() : (TexturePack) structure;
 
-        if (ExecutionContext.IS_MODNATION_RACERS)
+        if (ExecutionContext.isModNation())
             super.serialize(serializer, pack);
 
         if (serializer.isWriting()) serializer.getOutput().bytes(pack.stream);

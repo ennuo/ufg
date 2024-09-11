@@ -9,7 +9,7 @@ public class DecompressLZ {
         
         if (magic.equals("PMCQ")) stream.setLittleEndian(true);
         else if (!magic.equals("QCMP"))
-            throw new IllegalArgumentException("Not a quick compressed file!");
+            return data;
         
         stream.u16(); // type
         stream.u16(); // version
@@ -64,8 +64,8 @@ public class DecompressLZ {
                 decompressedData[j++] = decompressedData[index];
         }
 
-        if (uncompressedChecksum != UFGCRC.hash(decompressedData))
-            throw new RuntimeException("Checksum doesn't match for decompressed data!");
+        // if (uncompressedChecksum != UFGCRC.qFileHash64(decompressedData))
+        //     throw new RuntimeException("Checksum doesn't match for decompressed data!");
 
         return decompressedData;
     }

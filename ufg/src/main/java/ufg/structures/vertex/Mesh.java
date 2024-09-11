@@ -1,9 +1,9 @@
 package ufg.structures.vertex;
 
 import ufg.enums.PrimitiveType;
-import ufg.util.ExecutionContext;
 import ufg.io.Serializable;
 import ufg.io.Serializer;
+import ufg.util.ExecutionContext;
 
 public class Mesh implements Serializable {
     public static final int BASE_ALLOCATION_SIZE = 0xa0;
@@ -44,7 +44,7 @@ public class Mesh implements Serializable {
 
         // There's probably some technical alignment reasons to this
         // but I'll deal with it later
-        serializer.pad(ExecutionContext.IS_MODNATION_RACERS ? 0x14 : 0x24);
+        serializer.pad(ExecutionContext.isKarting() ? 0x24 : 0x14);
         
         return mesh;
     }

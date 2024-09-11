@@ -2,12 +2,13 @@ package ufg.resources;
 
 import org.joml.Vector3f;
 
-import ufg.util.ExecutionContext;
-import ufg.util.UFGCRC;
 import ufg.io.Serializable;
 import ufg.io.Serializer;
 import ufg.structures.chunks.ResourceData;
 import ufg.structures.vertex.Mesh;
+import ufg.structures.vertex.SoftbodyData;
+import ufg.util.ExecutionContext;
+import ufg.util.UFGCRC;
 
 public class Model extends ResourceData {
     public static final int BASE_ALLOCATION_SIZE = 
@@ -22,6 +23,9 @@ public class Model extends ResourceData {
     public int locatorsUID;
     public Mesh[] meshes;
 
+    public int hasSoftbodyData;
+    public SoftbodyData softbodyData = new SoftbodyData();
+
     public Model() { this.typeUID = UFGCRC.qStringHash32("Illusion.Model"); }
 
     @SuppressWarnings("unchecked")
@@ -35,7 +39,7 @@ public class Model extends ResourceData {
         model.maxAABB = serializer.v3(model.maxAABB);
         serializer.pad(4);
 
-        if (ExecutionContext.IS_MODNATION_RACERS) {
+        if (ExecutionContext.isModNation()) {
             serializer.pad(0x18);
             model.bonePaletteUID = serializer.i32(model.bonePaletteUID);
         } else {
@@ -50,10 +54,13 @@ public class Model extends ResourceData {
             serializer.pad(0x8);
             model.targetsUID = serializer.i32(model.targetsUID);
             serializer.pad(0x4);
-    
-            serializer.pad(0x8);
-            model.locatorsUID = serializer.i32(model.locatorsUID);
-            serializer.pad(0x4);
+
+            if (ExecutionContext.isKarting())
+            {
+                serializer.pad(0x8);
+                model.locatorsUID = serializer.i32(model.locatorsUID);
+                serializer.pad(0x4);
+            }
     
             serializer.pad(0xC); // some extra data?
         }
@@ -75,7 +82,7 @@ public class Model extends ResourceData {
 
         serializer.seek(meshTableOffset);
 
-        int MESH_INSTANCE_SIZE = ExecutionContext.IS_MODNATION_RACERS ? 0x90 : 0xa0;
+        int MESH_INSTANCE_SIZE = ExecutionContext.isKarting() ? 0xa0 : 0x90;
 
         int[] meshOffsets = new int[numMeshes];
         if (serializer.isWriting()) {
@@ -97,12 +104,27 @@ public class Model extends ResourceData {
             model.meshes[i] = serializer.struct(model.meshes[i], Mesh.class);
         }
 
-        if (serializer.isWriting() && !ExecutionContext.IS_MODNATION_RACERS) {
+        // this is softbodies? 0xb4 refers to softbody offset, number before it is hasSoftbodyInfo
+        if (ExecutionContext.isKarting()) {
             int endOffset = serializer.getOffset();
-            serializer.seek(modelUserOffset + 0xC);
-            serializer.i32(endOffset - serializer.getOffset());
-            serializer.seek(endOffset);
+            serializer.seek(modelUserOffset + 0x8);
+            
+            model.hasSoftbodyData = serializer.i32(model.hasSoftbodyData);
+            int softbodyOffset = serializer.getOffset();
+            softbodyOffset += serializer.i32(endOffset - softbodyOffset);
+            serializer.seek(softbodyOffset);
+            if (hasSoftbodyData > 0)
+                model.softbodyData = serializer.struct(model.softbodyData, SoftbodyData.class);
         }
+
+        // short* mVerletVertIndices
+        // short* mRenderVertIndices
+        // int* mSpringData
+        // short* mRenderVertToVerletVertMapper
+        // int mNumSoftVertIndices
+        // int mNumRenderVertIndices
+        // int mNumSpringData
+        // int mNumRenderVertToVerletVertRapper
 
         return model;
     }
@@ -115,6 +137,9 @@ public class Model extends ResourceData {
             meshTableSize += (16 - (meshTableSize % 16));
         
         size += (meshTableSize + (this.meshes.length * Mesh.BASE_ALLOCATION_SIZE));
+
+        if (this.softbodyData != null && this.hasSoftbodyData > 0)
+            size += this.softbodyData.getAllocatedSize();
 
         return size;
     }

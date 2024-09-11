@@ -56,6 +56,82 @@ public class Material extends ResourceData {
 
     public Material() { this.typeUID = UFGCRC.qStringHash32("Illusion.Material"); }
 
+    public static Material createKartShader(String name, String diffuse, String normal, String specular) {
+        Material material = new Material();
+
+        material.name = name;
+        material.UID = UFGCRC.qStringHashUpper32(name);
+
+        material.addResourceProperty("iShader", "iShader", "Illusion.Shader:skCarPaint");
+        material.addProperty("iAlphaState", "Illusion.AlphaState", null);
+
+        material.addProperty("iRasterState", "Illusion.RasterState", null);
+        material.addStateBlock("sbCarPaintLookSK", 0x0DE99FA1);
+
+        material.addResourceProperty("texDiffuse", "iTexture", "Illusion.Texture:" + ((diffuse == null) ? "DefaultWhite" : diffuse));
+        material.addResourceProperty("texSpecular", "iTexture", "Illusion.Texture:" + ((specular == null) ? "DefaultSpecular" : specular));
+        material.addResourceProperty("texNormal", "iTexture", "Illusion.Texture:" + ((normal == null) ? "DefaultNormalMap" : normal));
+
+        material.addResourceProperty("texReflection", "iTexture", "Illusion.Texture:GEN_Windowreflect01_D");
+
+        return material;
+    }
+
+    public static Material createSkinnedKartShader(String name, String diffuse, String normal, String specular) {
+        Material material = new Material();
+
+        material.name = name;
+        material.UID = UFGCRC.qStringHashUpper32(name);
+
+        material.addResourceProperty("iShader", "iShader", "Illusion.Shader:skCarPaintSkinned");
+        material.addProperty("iAlphaState", "Illusion.AlphaState", null);
+
+        material.addStateBlock("sbCarPaintLookSK", 0x0DE99FA1);
+
+        material.addResourceProperty("texDiffuse", "iTexture", "Illusion.Texture:" + ((diffuse == null) ? "DefaultWhite" : diffuse));
+        material.addResourceProperty("texSpecular", "iTexture", "Illusion.Texture:" + ((specular == null) ? "DefaultSpecular" : specular));
+        material.addResourceProperty("texNormal", "iTexture", "Illusion.Texture:" + ((normal == null) ? "DefaultNormalMap" : normal));
+        material.addResourceProperty("texReflection", "iTexture", "Illusion.Texture:GEN_Windowreflect01_D");
+
+        material.addProperty("iRasterState", "Illusion.RasterState", null);
+
+        return material;
+    }
+
+    public static Material createKartPartShader(String name, String diffuse, String normal, String specular) {
+        Material material = new Material();
+
+        material.name = name;
+        material.UID = UFGCRC.qStringHashUpper32(name);
+
+        material.addResourceProperty("iShader", "iShader", "Illusion.Shader:skCarPartPaint");
+        material.addProperty("iAlphaState", "Illusion.AlphaState", null);
+
+        material.addProperty("iRasterState", "Illusion.RasterState", null);
+        material.addStateBlock("sbCarPaintLookSK", 0x0DE99FA1);
+
+        material.addResourceProperty("texDiffuse", "iTexture", "Illusion.Texture:" + ((diffuse == null) ? "DefaultWhite" : diffuse));
+        material.addResourceProperty("texSpecular", "iTexture", "Illusion.Texture:" + ((specular == null) ? "DefaultSpecular" : specular));
+        material.addResourceProperty("texNormal", "iTexture", "Illusion.Texture:" + ((normal == null) ? "DefaultNormalMap" : normal));
+
+        material.addResourceProperty("texReflection", "iTexture", "Illusion.Texture:GEN_Windowreflect01_D");
+
+        return material;
+    }
+
+    public static Material createSimpleShader(String name) {
+        Material material = new Material();
+        material.name = name;
+        material.UID = UFGCRC.qStringHashUpper32(name);
+
+        material.addResourceProperty("iShader", "iShader", "Illusion.Shader:Simple");
+        material.addProperty("iAlphaState", "Illusion.AlphaState", null);
+        material.addProperty("iRasterState", "Illusion.RasterState", null);
+        
+        return material;
+
+    }
+
     public static Material createVinylShader(String name, String diffuse, String normal, String specular) {
         Material material = new Material();
 

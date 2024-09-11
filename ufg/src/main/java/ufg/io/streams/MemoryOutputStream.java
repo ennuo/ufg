@@ -51,6 +51,13 @@ public class MemoryOutputStream {
         return this;
     }
 
+    public final MemoryOutputStream bytes(byte[] value, int offset, int size)
+    {
+        System.arraycopy(value, offset, this.buffer, this.offset, size);
+        this.offset += size;
+        return this;
+    }
+
     /**
      * Writes a byte array to the stream.
      * @param value Bytes to write
@@ -389,8 +396,12 @@ public class MemoryOutputStream {
      * Seeks ahead in stream relative to offset.
      * @param offset Offset to go to
      */
-    public final void seek(int offset) { 
+    public final void forward(int offset) { 
         this.seek(offset, SeekMode.Relative);
+    }
+
+    public final void seek(int offset) {
+        this.seek(offset, SeekMode.Begin);
     }
 
     public final byte[] getBuffer() { return this.buffer; }
@@ -399,4 +410,44 @@ public class MemoryOutputStream {
     public final boolean isLittleEndian() { return this.isLittleEndian; }
 
     public final void setLittleEndian(boolean value) { this.isLittleEndian = value; }
+
+    public MemoryOutputStream AddDeadBeef() {
+        i32(0xDEADB0FF);
+        i32(0x000003f0);
+        i32(0x000003f0);
+        i32(0x00000000);
+        for (int i = 0; i < 0x3f0 / 0x4; ++i)
+            i32(0xBFBFBFBF);
+        return this;
+    }
+
+
+
+
+
+    public MemoryOutputStream AddPaddedRegion() { return AddPaddedRegion(0x1000); }
+    public MemoryOutputStream AddPaddedRegion(int boundary) {
+
+        int paddingNeeded = 0;
+        if (this.offset % boundary != 0)
+            paddingNeeded = (boundary - (this.offset % boundary));
+        if (paddingNeeded == 0) return this;
+
+        if (paddingNeeded < 0x10)
+        {
+            paddingNeeded = 0x10 - paddingNeeded;
+        }
+        else
+        {
+            paddingNeeded -= 0x10;
+        }
+
+        i32(0xc9dc5f62);
+        i32(paddingNeeded);
+        i32(paddingNeeded);
+        i32(paddingNeeded);
+        pad(paddingNeeded);
+
+        return this;
+    }
 }

@@ -324,8 +324,12 @@ public class MemoryInputStream {
      * Seeks ahead in stream relative to offset.
      * @param offset Offset to go to
      */
-    public final void seek(int offset) { 
+    public final void forward(int offset) { 
         this.seek(offset, SeekMode.Relative);
+    }
+
+    public final void seek(int offset) {
+        this.seek(offset, SeekMode.Begin);
     }
 
     public final boolean isLittleEndian() { return this.isLittleEndian; }

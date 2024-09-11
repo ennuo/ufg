@@ -1,23 +1,23 @@
 package ufg.resources;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
+import ufg.enums.PartAttrib;
 import ufg.io.Serializable;
 import ufg.io.Serializer;
-import ufg.enums.PartAttrib;
 import ufg.structures.chunks.ResourceData;
 import ufg.util.UFGCRC;
 
 public class PartDB extends ResourceData {
     public static final int BASE_ALLOCATION_SIZE = 
         ResourceData.BASE_ALLOCATION_SIZE + 0x10;
-
+    
     public static class PartValue implements Serializable {
         public static final int BASE_ALLOCATION_SIZE = 0x4;
 
@@ -27,6 +27,16 @@ public class PartDB extends ResourceData {
         public PartValue() {};
         public PartValue(PartAttrib type, Object value) {
             this.type = type;
+            this.value = value;
+        }
+
+        public PartValue(String value) {
+            this.type = PartAttrib.STRING;
+            this.value = value;
+        }
+
+        public PartValue(int value) {
+            this.type = PartAttrib.UID;
             this.value = value;
         }
 
@@ -85,13 +95,26 @@ public class PartDB extends ResourceData {
         public static final int BASE_ALLOCATION_SIZE = 0x10;
 
         public String name;
-        private HashMap<Integer, PartValue> properties = new HashMap<>();
+        public int uid;
+
+        private LinkedHashMap<Integer, PartValue> properties = new LinkedHashMap<>();
 
         public PartValue get(String property) { return this.properties.get(UFGCRC.qStringHash32(property.toUpperCase())); }
         public PartValue get(int property) { return this.properties.get(property); }
 
         public void set(String property, PartValue value) { this.properties.put(UFGCRC.qStringHash32(property.toUpperCase()), value); }
         public void set(int property, PartValue value) { this.properties.put(property, value); }
+
+
+        public void set(String property, String value) { this.properties.put(UFGCRC.qStringHash32(property.toUpperCase()), new PartValue(value)); }
+        public void set(int property, String value) { this.properties.put(property, new PartValue(value)); }
+
+        public void set(String property, int value) { this.properties.put(UFGCRC.qStringHash32(property.toUpperCase()), new PartValue(value)); }
+        public void set(int property, int value) { this.properties.put(property, new PartValue(value)); }
+
+
+        public void remove(String property) { this.properties.remove(UFGCRC.qStringHashUpper32(property)); }
+        public void remove(int property) { this.properties.remove(property); }
 
         @SuppressWarnings("unchecked")
         @Override public Part serialize(Serializer serializer, Serializable structure) {
@@ -101,9 +124,13 @@ public class PartDB extends ResourceData {
             part.name = serializer.cstr(part.name);
             serializer.align(0x4);
 
+            uid = UFGCRC.qStringHashUpper32(part.name);
+
 
             if (serializer.isWriting()) {
-                for (Integer key : part.properties.keySet()) {
+                // List<Integer> keys = new ArrayList<>(properties.keySet());
+                // keys.sort((a, z) -> Integer.compareUnsigned(a, z));
+                for (Integer key : properties.keySet()) {
                     serializer.getOutput().i32(key);
                     serializer.struct(part.properties.get(key), PartValue.class);
                 }
@@ -111,9 +138,13 @@ public class PartDB extends ResourceData {
                 return part;
             }
 
-            this.properties = new HashMap<>(propertyCount);
-            for (int i = 0; i < propertyCount; ++i) 
-                this.properties.put(serializer.getInput().i32(), serializer.struct(null, PartValue.class));
+            this.properties = new LinkedHashMap<>(propertyCount);
+            for (int i = 0; i < propertyCount; ++i) {
+                int key = serializer.getInput().i32();
+                PartValue value = serializer.struct(null, PartValue.class);
+
+                this.properties.put(key, value);
+            }
 
             return part;
         }
@@ -158,7 +189,7 @@ public class PartDB extends ResourceData {
         public static class SlotEntry implements Serializable {
             public static final int BASE_ALLOCATION_SIZE = 0x40;
             
-            public int uid;
+            public long uid;
             public int type;
             public String name;
             public ArrayList<Integer> uids = new ArrayList<>();
@@ -167,7 +198,7 @@ public class PartDB extends ResourceData {
             @Override public SlotEntry serialize(Serializer serializer, Serializable structure) {
                 SlotEntry entry = (structure == null) ? new SlotEntry() : (SlotEntry) structure;
     
-                entry.uid = serializer.i32(entry.uid);
+                entry.uid = serializer.u32(entry.uid);
                 entry.type = serializer.i32(entry.type);
                 int count = serializer.i32(serializer.isWriting() ? entry.uids.size() : 0);
                 entry.name = serializer.cstr(entry.name);
@@ -214,6 +245,5 @@ public class PartDB extends ResourceData {
             int size = SlotDB.BASE_ALLOCATION_SIZE + 0xFFFFFF;
             return size;
         }
-
     }
 }

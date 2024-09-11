@@ -1,7 +1,7 @@
 package ufg.util;
 
 public class UFGCRC {
-    private static final int[] CRC_TABLE_32 = new int[] {
+    public static final int[] CRC_TABLE_32 = new int[] {
         0x00000000, 0x04C11DB7, 0x09823B6E, 0x0D4326D9, 0x130476DC,
         0x17C56B6B, 0x1A864DB2, 0x1E475005, 0x2608EDB8, 0x22C9F00F,
         0x2F8AD6D6, 0x2B4BCB61, 0x350C9B64, 0x31CD86D3, 0x3C8EA00A,
@@ -56,7 +56,7 @@ public class UFGCRC {
         0xB1F740B4
     };
 
-    private static final long[] CRC_TABLE_64 = new long[] {
+    public static final long[] CRC_TABLE_64 = new long[] {
         0x0L, 0x7ad870c830358979L, 0xf5b0e190606b12f2L, 0x8f689158505e9b8bL, 0xc038e5739841b68fL, 0xbae095bba8743ff6L,
         0x358804e3f82aa47dL, 0x4f50742bc81f2d04L, 0xab28ecb46814fe75L, 0xd1f09c7c5821770cL, 0x5e980d24087fec87L,
         0x24407dec384a65feL, 0x6b1009c7f05548faL, 0x11c8790fc060c183L, 0x9ea0e857903e5a08L, 0xe478989fa00bd371L,
@@ -158,10 +158,35 @@ public class UFGCRC {
         return qStringHash64(str.toUpperCase());
     }
 
-    public static long hash(byte[] buffer) {
+    public static int qFileHash32(byte[] buffer) {
+        int crc = -1;
+        for (int i = 0; i < buffer.length; ++i)
+            crc = crc << 8 ^ CRC_TABLE_32[(crc >> 0x18 ^ buffer[i]) & 0xff];
+        return crc;
+    }
+
+    public static int qFileHash32(byte[] buffer, int crc) {
+        if (buffer == null || buffer.length == 0) return crc;
+        for (int i = 0; i < buffer.length; ++i)
+            crc = crc << 8 ^ CRC_TABLE_32[(crc >> 0x18 ^ buffer[i]) & 0xff];
+        return crc;
+    }
+
+    public static long qFileHash64(byte[] buffer) {
         long crc = -1;
         for (int i = 0; i < buffer.length; ++i)
             crc = crc >>> 8 ^ CRC_TABLE_64[(int) (((crc ^ buffer[i]) & 0xff))];        
         return crc;
+    }
+
+    public static long qFileHash64(byte[] buffer, long crc) {
+        if (buffer == null || buffer.length == 0) return crc;
+        for (int i = 0; i < buffer.length; ++i)
+            crc = crc >>> 8 ^ CRC_TABLE_64[(int) (((crc ^ buffer[i]) & 0xff))];        
+        return crc;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Bytes.toHex(qStringHashUpper32("LBP_CHAR_MoustacheMan01")));
     }
 }

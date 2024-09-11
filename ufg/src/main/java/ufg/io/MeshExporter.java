@@ -7,9 +7,6 @@ import java.util.HashMap;
 
 import org.joml.Vector4f;
 
-import ufg.util.Bytes;
-import ufg.io.streams.MemoryInputStream;
-import ufg.io.streams.MemoryOutputStream;
 import de.javagl.jgltf.impl.v2.Accessor;
 import de.javagl.jgltf.impl.v2.Asset;
 import de.javagl.jgltf.impl.v2.Buffer;
@@ -27,14 +24,18 @@ import de.javagl.jgltf.impl.v2.Texture;
 import de.javagl.jgltf.impl.v2.TextureInfo;
 import de.javagl.jgltf.model.io.v2.GltfAssetV2;
 import de.javagl.jgltf.model.io.v2.GltfAssetWriterV2;
+import ufg.enums.VertexStreamElementUsage;
+import ufg.io.streams.MemoryInputStream;
+import ufg.io.streams.MemoryOutputStream;
+import ufg.resources.Locators;
+import ufg.resources.Material.MaterialParameter;
 import ufg.resources.Model;
 import ufg.resources.TexturePack;
-import ufg.resources.Material.MaterialParameter;
 import ufg.structures.chunks.ChunkFileIndexEntry;
 import ufg.structures.chunks.ResourceData;
 import ufg.structures.vertex.VertexStreamDescriptor;
 import ufg.structures.vertex.VertexStreams;
-import ufg.enums.VertexStreamElementUsage;
+import ufg.util.Bytes;
 
 public class MeshExporter {
 
@@ -361,6 +362,8 @@ public class MeshExporter {
 
             this.glTf.addMeshes(glMesh);
 
+            int sceneNodeIndex = 0;
+
             Node root = new Node();
             root.setName(model.name);
             root.setMesh(0);
@@ -368,10 +371,20 @@ public class MeshExporter {
 
             Scene scene = new Scene();
             scene.setName("Scene");
-            scene.addNodes(0);
+            scene.addNodes(sceneNodeIndex++);
             this.glTf.addScenes(scene);
-
             this.glTf.setScene(0);
+
+            if (model.locatorsUID != 0) {
+                Locators loc = (Locators)this.modelStreamingResources.get(model.locatorsUID);
+                for (String key : loc.locators.keySet()) {
+                    Node node = new Node();
+                    node.setName(key);
+                    node.setMatrix(loc.locators.get(key).get(new float[16]));
+                    scene.addNodes(sceneNodeIndex++);
+                    this.glTf.addNodes(node);
+                }
+            }
 
             Buffer buffer = new Buffer();
             buffer.setByteLength(this.buffer.length);
@@ -384,8 +397,10 @@ public class MeshExporter {
     public static byte[] getGLB(int modelUID, HashMap<Integer, ResourceData> modelStreaming, HashMap<Integer, ResourceData> texturePackResources, HashMap<Integer, ChunkFileIndexEntry> texturePackStreaming) {
 
         ExportContext context = new ExportContext(modelStreaming, texturePackResources, texturePackStreaming);
-        if (!context.addModel(modelUID))
-            return null;
+        try {
+            if (!context.addModel(modelUID))
+                return null;
+        } catch (Exception ex) { return null; }
 
         ByteBuffer buffer = ByteBuffer.wrap(context.buffer);
         GltfAssetV2 asset = new GltfAssetV2(context.glTf, buffer);
